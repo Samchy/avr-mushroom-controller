@@ -33,7 +33,6 @@ int main(void)
 	while(1)
 	{
 		CheckIR();
-
 	}
 	return 0;
 }
