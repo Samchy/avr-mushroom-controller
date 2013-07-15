@@ -1,0 +1,911 @@
+   1               		.file	"snake.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+ 141               	.global	dBorder
+ 143               	dBorder:
+ 144               		.stabd	46,0,0
+   1:snake.c       **** #include "snake.h"
+   2:snake.c       **** 
+   3:snake.c       **** static uint8_t chc(uint8_t * , int8_t offset, uint8_t overflowvalue);
+   4:snake.c       **** static void PlaceFood(void);
+   5:snake.c       **** static void ComputeHC(Snake_t * snake);
+   6:snake.c       **** 
+   7:snake.c       **** void initGame()
+   8:snake.c       **** {
+   9:snake.c       **** 	dClear();
+  10:snake.c       **** 	dBorder();
+  11:snake.c       **** 	initSnake();
+  12:snake.c       **** 	PlaceFood();
+  13:snake.c       **** }
+  14:snake.c       **** 
+  15:snake.c       **** void initSnake()
+  16:snake.c       **** {	
+  17:snake.c       **** 	Snake.speed = 7;
+  18:snake.c       **** 	Snake.hx = 12;
+  19:snake.c       **** 	Snake.tx = 4;
+  20:snake.c       **** 	Snake.hy = 3;
+  21:snake.c       **** 	Snake.ty = 3;
+  22:snake.c       **** 	Snake.hd = RIGHT;
+  23:snake.c       **** 	Snake.nhd = RIGHT;
+  24:snake.c       **** 	Snake.td = RIGHT;
+  25:snake.c       **** 	dSnakeElement( Snake.hx, Snake.hy, RIGHT, PIXEL_ON );
+  26:snake.c       **** 	dSnakeElement( Snake.tx+SNKSTEP, Snake.ty, RIGHT, PIXEL_ON );
+  27:snake.c       **** 	dSnakeElement( Snake.tx, Snake.ty, RIGHT, PIXEL_ON );
+  28:snake.c       **** }
+  29:snake.c       **** 
+  30:snake.c       **** void dBorder()
+  31:snake.c       **** {
+ 146               	.LM0:
+ 147               	.LFBB1:
+ 148 0000 EF92      		push r14
+ 149 0002 0F93      		push r16
+ 150               	/* prologue: function */
+ 151               	/* frame size = 0 */
+ 152               	/* stack size = 2 */
+ 153               	.L__stack_usage = 2
+  32:snake.c       **** 	dLine(0,0,X_RES-1,0,PIXEL_ON,1);
+ 155               	.LM1:
+ 156 0004 EE24      		clr r14
+ 157 0006 E394      		inc r14
+ 158 0008 01E0      		ldi r16,lo8(1)
+ 159 000a 20E0      		ldi r18,0
+ 160 000c 43E5      		ldi r20,lo8(83)
+ 161 000e 60E0      		ldi r22,0
+ 162 0010 80E0      		ldi r24,0
+ 163 0012 0E94 0000 		call dLine
+  33:snake.c       **** 	dLine(X_RES-1,0,X_RES-1,Y_RES-1,PIXEL_ON,1);
+ 165               	.LM2:
+ 166 0016 2FE2      		ldi r18,lo8(47)
+ 167 0018 43E5      		ldi r20,lo8(83)
+ 168 001a 60E0      		ldi r22,0
+ 169 001c 83E5      		ldi r24,lo8(83)
+ 170 001e 0E94 0000 		call dLine
+  34:snake.c       **** 	dLine(0,Y_RES-1,X_RES-1,Y_RES-1,PIXEL_ON,1);
+ 172               	.LM3:
+ 173 0022 2FE2      		ldi r18,lo8(47)
+ 174 0024 43E5      		ldi r20,lo8(83)
+ 175 0026 6FE2      		ldi r22,lo8(47)
+ 176 0028 80E0      		ldi r24,0
+ 177 002a 0E94 0000 		call dLine
+  35:snake.c       **** 	dLine(0,0,0,Y_RES-2,PIXEL_ON,1);
+ 179               	.LM4:
+ 180 002e 2EE2      		ldi r18,lo8(46)
+ 181 0030 40E0      		ldi r20,0
+ 182 0032 60E0      		ldi r22,0
+ 183 0034 80E0      		ldi r24,0
+ 184 0036 0E94 0000 		call dLine
+ 185               	/* epilogue start */
+  36:snake.c       **** }
+ 187               	.LM5:
+ 188 003a 0F91      		pop r16
+ 189 003c EF90      		pop r14
+ 190 003e 0895      		ret
+ 192               	.Lscope1:
+ 194               		.stabd	78,0,0
+ 200               	.global	dSnakeElement
+ 202               	dSnakeElement:
+ 203               		.stabd	46,0,0
+  37:snake.c       **** 
+  38:snake.c       **** void dSnakeElement(uint8_t x, uint8_t y, uint8_t orientation, uint8_t pixel_mode)
+  39:snake.c       **** {	
+ 205               	.LM6:
+ 206               	.LFBB2:
+ 207 0040 EF92      		push r14
+ 208 0042 0F93      		push r16
+ 209               	/* prologue: function */
+ 210               	/* frame size = 0 */
+ 211               	/* stack size = 2 */
+ 212               	.L__stack_usage = 2
+ 213 0044 022F      		mov r16,r18
+  40:snake.c       **** 		/*
+  41:snake.c       **** 		A snake element: 
+  42:snake.c       **** 		
+  43:snake.c       **** 		    ^ y
+  44:snake.c       **** 		    |
+  45:snake.c       **** 		    |
+  46:snake.c       **** 		o o o o
+  47:snake.c       **** 		o o X o - - - > x
+  48:snake.c       **** 		o o o o
+  49:snake.c       **** 		
+  50:snake.c       **** 		*/
+  51:snake.c       **** 	switch (orientation) {
+ 215               	.LM7:
+ 216 0046 4131      		cpi r20,lo8(17)
+ 217 0048 01F0      		breq .L4
+ 218 004a 00F4      		brsh .L5
+ 219 004c 4031      		cpi r20,lo8(16)
+ 220 004e 01F4      		brne .L2
+  52:snake.c       **** 		case RIGHT: dRectangle(x-2, y-1, x+1, y+1, pixel_mode, 0 ); break;
+  53:snake.c       **** 		case LEFT : dRectangle(x-1, y-1, x+2, y+1, pixel_mode, 0 ); break;
+  54:snake.c       **** 		case UP	  : dRectangle(x-1, y-1, x+1, y+2, pixel_mode, 0 ); break;
+ 222               	.LM8:
+ 223 0050 22E0      		ldi r18,lo8(2)
+ 224 0052 260F      		add r18,r22
+ 225 0054 41E0      		ldi r20,lo8(1)
+ 226 0056 00C0      		rjmp .L11
+ 227               	.L5:
+  51:snake.c       **** 	switch (orientation) {
+ 229               	.LM9:
+ 230 0058 4531      		cpi r20,lo8(21)
+ 231 005a 01F0      		breq .L7
+ 232 005c 4631      		cpi r20,lo8(22)
+ 233 005e 01F4      		brne .L2
+  52:snake.c       **** 		case RIGHT: dRectangle(x-2, y-1, x+1, y+1, pixel_mode, 0 ); break;
+ 235               	.LM10:
+ 236 0060 21E0      		ldi r18,lo8(1)
+ 237 0062 260F      		add r18,r22
+ 238 0064 41E0      		ldi r20,lo8(1)
+ 239 0066 480F      		add r20,r24
+ 240 0068 6150      		subi r22,lo8(-(-1))
+ 241 006a E12C      		mov r14,__zero_reg__
+ 242 006c 8250      		subi r24,lo8(-(-2))
+ 243 006e 00C0      		rjmp .L10
+ 244               	.L7:
+  53:snake.c       **** 		case LEFT : dRectangle(x-1, y-1, x+2, y+1, pixel_mode, 0 ); break;
+ 246               	.LM11:
+ 247 0070 21E0      		ldi r18,lo8(1)
+ 248 0072 260F      		add r18,r22
+ 249 0074 42E0      		ldi r20,lo8(2)
+ 250               	.L11:
+ 252               	.LM12:
+ 253 0076 480F      		add r20,r24
+ 254 0078 6150      		subi r22,lo8(-(-1))
+ 255 007a 00C0      		rjmp .L9
+ 256               	.L4:
+  55:snake.c       **** 		case DOWN : dRectangle(x-1, y-2, x+1, y+1, pixel_mode, 0 ); break;
+ 258               	.LM13:
+ 259 007c 21E0      		ldi r18,lo8(1)
+ 260 007e 260F      		add r18,r22
+ 261 0080 41E0      		ldi r20,lo8(1)
+ 262 0082 480F      		add r20,r24
+ 263 0084 6250      		subi r22,lo8(-(-2))
+ 264               	.L9:
+ 265 0086 E12C      		mov r14,__zero_reg__
+ 266 0088 8150      		subi r24,lo8(-(-1))
+ 267               	.L10:
+ 268 008a 0E94 0000 		call dRectangle
+ 269               	.L2:
+ 270               	/* epilogue start */
+  56:snake.c       **** 	}
+  57:snake.c       **** }
+ 272               	.LM14:
+ 273 008e 0F91      		pop r16
+ 274 0090 EF90      		pop r14
+ 275 0092 0895      		ret
+ 277               	.Lscope2:
+ 279               		.stabd	78,0,0
+ 282               	PlaceFood:
+ 283               		.stabd	46,0,0
+  58:snake.c       **** 
+  59:snake.c       **** 
+  60:snake.c       **** void dSnake(Snake_t * snake)
+  61:snake.c       **** {
+  62:snake.c       **** 	uint8_t eat = 0, bang = 0;
+  63:snake.c       **** 
+  64:snake.c       **** 	ComputeHC(snake);
+  65:snake.c       **** 	
+  66:snake.c       **** 	// graphically check if there is something in the new computed position
+  67:snake.c       **** 	if ( dPixelIsSet(snake->hx, snake->hy) )
+  68:snake.c       **** 			bang = 1; // mark that there is
+  69:snake.c       **** 	
+  70:snake.c       **** 	// if we're on food position
+  71:snake.c       **** 	if ( snake->hx == snake->fx && snake->hy == snake->fy)
+  72:snake.c       **** 			eat = 1;
+  73:snake.c       **** 	
+  74:snake.c       **** 	// if not on food position and bang happened
+  75:snake.c       **** 	if ( bang && !eat )
+  76:snake.c       **** 	{
+  77:snake.c       **** 		TIMSK1 &= ~(1<<OCIE1A);
+  78:snake.c       **** 		TIMSK1 &= ~(1<<ICIE1); // Timer1 Input Capture Interrupt Enable
+  79:snake.c       **** 		delay_ms(2000);
+  80:snake.c       **** 		initGame();
+  81:snake.c       **** 		TIMSK1 = (1<<OCIE1A);
+  82:snake.c       **** 		TIMSK1 |= (1<<ICIE1); // Timer1 Input Capture Interrupt Enable
+  83:snake.c       **** 		return 0;
+  84:snake.c       **** 	}
+  85:snake.c       **** 	// draw new head
+  86:snake.c       **** 	dSnakeElement(snake->hx, snake->hy, snake->nhd, PIXEL_ON);
+  87:snake.c       **** 	// update head direction
+  88:snake.c       **** 	snake->hd = snake->nhd;
+  89:snake.c       **** 	
+  90:snake.c       **** 	if (!eat) 
+  91:snake.c       **** 	{
+  92:snake.c       **** 	// delete tail if no food eaten
+  93:snake.c       **** 	dSnakeElement(snake->tx,snake->ty,snake->td,PIXEL_OFF);
+  94:snake.c       **** 
+  95:snake.c       **** 	// switch tail direction by graphically checking continuity
+  96:snake.c       **** 	if ( dPixelIsSet( snake->tx + 2 , snake->ty))  snake->td = RIGHT;  // look right
+  97:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty - 2 ))  snake->td = UP; 	 // look up
+  98:snake.c       **** 	if ( dPixelIsSet( snake->tx - 2 , snake->ty))  snake->td = LEFT;  // look left
+  99:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty + 2 ))  snake->td = DOWN;  // look down
+ 100:snake.c       **** 	
+ 101:snake.c       **** 	// switch tail position
+ 102:snake.c       **** 	switch (snake->td) {
+ 103:snake.c       **** 		case UP: 
+ 104:snake.c       **** 			chc(&snake->ty,-SNKSTEP, Y_RES);
+ 105:snake.c       **** 			break;
+ 106:snake.c       **** 		case DOWN:
+ 107:snake.c       **** 			chc(&snake->ty, SNKSTEP, Y_RES);
+ 108:snake.c       **** 			break;
+ 109:snake.c       **** 		case LEFT:
+ 110:snake.c       **** 			chc(&snake->tx,-SNKSTEP, X_RES);
+ 111:snake.c       **** 			break;
+ 112:snake.c       **** 		case RIGHT:
+ 113:snake.c       **** 			chc(&snake->tx, SNKSTEP, X_RES);
+ 114:snake.c       **** 			break;
+ 115:snake.c       **** 	}
+ 116:snake.c       **** 	}
+ 117:snake.c       **** 	
+ 118:snake.c       **** 	else PlaceFood();
+ 119:snake.c       **** 	
+ 120:snake.c       **** }
+ 121:snake.c       **** 
+ 122:snake.c       **** /** Compute head coordinates **/
+ 123:snake.c       **** void ComputeHC(Snake_t * snake)
+ 124:snake.c       **** {
+ 125:snake.c       **** 		// switch head direction
+ 126:snake.c       **** 	switch (snake->hd) {
+ 127:snake.c       **** 		case UP: 
+ 128:snake.c       **** 			if (snake->nhd == UP)	  chc(&snake->hy,-4, Y_RES);
+ 129:snake.c       **** 			if (snake->nhd == RIGHT)  chc(&snake->hx, 4, X_RES); 
+ 130:snake.c       **** 			if (snake->nhd == LEFT)   chc(&snake->hx,-4, X_RES); 
+ 131:snake.c       **** 			break;
+ 132:snake.c       **** 		case DOWN:
+ 133:snake.c       **** 			if (snake->nhd == DOWN)   chc(&snake->hy, 4, Y_RES);
+ 134:snake.c       **** 			if (snake->nhd == RIGHT)  chc(&snake->hx, 4, X_RES); 
+ 135:snake.c       **** 			if (snake->nhd == LEFT)   chc(&snake->hx,-4, X_RES); 
+ 136:snake.c       **** 			break;
+ 137:snake.c       **** 		case LEFT:
+ 138:snake.c       **** 			if (snake->nhd == LEFT)   chc(&snake->hx,-4, X_RES);
+ 139:snake.c       **** 			if (snake->nhd == UP) 	  chc(&snake->hy,-4, Y_RES); 
+ 140:snake.c       **** 			if (snake->nhd == DOWN)   chc(&snake->hy, 4, Y_RES); 
+ 141:snake.c       **** 			break;
+ 142:snake.c       **** 		case RIGHT:
+ 143:snake.c       **** 			if (snake->nhd == RIGHT)  chc(&snake->hx, 4, X_RES);
+ 144:snake.c       **** 			if (snake->nhd == UP) 	  chc(&snake->hy,-4, Y_RES); 
+ 145:snake.c       **** 			if (snake->nhd == DOWN)   chc(&snake->hy, 4, Y_RES); 
+ 146:snake.c       **** 			break;
+ 147:snake.c       **** 	}
+ 148:snake.c       **** }
+ 149:snake.c       **** 
+ 150:snake.c       **** /** change coordinate **/
+ 151:snake.c       **** uint8_t chc(uint8_t * v, int8_t offset, uint8_t overflow)
+ 152:snake.c       **** {
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 154:snake.c       **** }
+ 155:snake.c       **** 
+ 156:snake.c       **** void PlaceFood()
+ 157:snake.c       **** {
+ 285               	.LM15:
+ 286               	.LFBB3:
+ 287 0094 0F93      		push r16
+ 288 0096 1F93      		push r17
+ 289 0098 CF93      		push r28
+ 290 009a DF93      		push r29
+ 291               	/* prologue: function */
+ 292               	/* frame size = 0 */
+ 293               	/* stack size = 4 */
+ 294               	.L__stack_usage = 4
+ 158:snake.c       **** 	cli();
+ 296               	.LM16:
+ 297               	/* #APP */
+ 298               	 ;  158 "snake.c" 1
+ 299 009c F894      		cli
+ 300               	 ;  0 "" 2
+ 159:snake.c       **** 	srand(17);
+ 302               	.LM17:
+ 303               	/* #NOAPP */
+ 304 009e 81E1      		ldi r24,lo8(17)
+ 305 00a0 90E0      		ldi r25,0
+ 306 00a2 0E94 0000 		call srand
+ 160:snake.c       **** 	do
+ 161:snake.c       **** 	{
+ 162:snake.c       **** 		Snake.fx = 4 * (rand() % (X_RES/4));
+ 308               	.LM18:
+ 309 00a6 05E1      		ldi r16,lo8(21)
+ 310 00a8 10E0      		ldi r17,0
+ 163:snake.c       **** 		Snake.fy = 4 * (rand() % (Y_RES/4)) -1;
+ 312               	.LM19:
+ 313 00aa CCE0      		ldi r28,lo8(12)
+ 314 00ac D0E0      		ldi r29,0
+ 315               	.L15:
+ 162:snake.c       **** 		Snake.fx = 4 * (rand() % (X_RES/4));
+ 317               	.LM20:
+ 318 00ae 0E94 0000 		call rand
+ 319 00b2 B801      		movw r22,r16
+ 320 00b4 0E94 0000 		call __divmodhi4
+ 321 00b8 880F      		lsl r24
+ 322 00ba 880F      		lsl r24
+ 323 00bc 8093 0000 		sts Snake+7,r24
+ 325               	.LM21:
+ 326 00c0 0E94 0000 		call rand
+ 327 00c4 BE01      		movw r22,r28
+ 328 00c6 0E94 0000 		call __divmodhi4
+ 329 00ca 880F      		lsl r24
+ 330 00cc 880F      		lsl r24
+ 331 00ce 8150      		subi r24,lo8(-(-1))
+ 332 00d0 8093 0000 		sts Snake+8,r24
+ 164:snake.c       **** 	}
+ 165:snake.c       **** 	while(dPixelIsSet(Snake.fx,Snake.fy));
+ 334               	.LM22:
+ 335 00d4 6091 0000 		lds r22,Snake+8
+ 336 00d8 8091 0000 		lds r24,Snake+7
+ 337 00dc 0E94 0000 		call dPixelIsSet
+ 338 00e0 8111      		cpse r24,__zero_reg__
+ 339 00e2 00C0      		rjmp .L15
+ 166:snake.c       **** 	
+ 167:snake.c       **** 	// improvising by using the snake element draw function to draw the food	
+ 168:snake.c       **** 	dSnakeElement(Snake.fx,Snake.fy,RIGHT,PIXEL_ON); 
+ 341               	.LM23:
+ 342 00e4 6091 0000 		lds r22,Snake+8
+ 343 00e8 8091 0000 		lds r24,Snake+7
+ 344 00ec 21E0      		ldi r18,lo8(1)
+ 345 00ee 46E1      		ldi r20,lo8(22)
+ 346 00f0 0E94 0000 		call dSnakeElement
+ 169:snake.c       **** 	// turn off unwanted pixels
+ 170:snake.c       **** 	dPixel(Snake.fx-2,Snake.fy,PIXEL_OFF); 
+ 348               	.LM24:
+ 349 00f4 6091 0000 		lds r22,Snake+8
+ 350 00f8 8091 0000 		lds r24,Snake+7
+ 351 00fc 40E0      		ldi r20,0
+ 352 00fe 8250      		subi r24,lo8(-(-2))
+ 353 0100 0E94 0000 		call dPixel
+ 171:snake.c       **** 	dPixel(Snake.fx-2,Snake.fy-1,PIXEL_OFF);
+ 355               	.LM25:
+ 356 0104 6091 0000 		lds r22,Snake+8
+ 357 0108 8091 0000 		lds r24,Snake+7
+ 358 010c 6150      		subi r22,lo8(-(-1))
+ 359 010e 40E0      		ldi r20,0
+ 360 0110 8250      		subi r24,lo8(-(-2))
+ 361 0112 0E94 0000 		call dPixel
+ 172:snake.c       **** 	dPixel(Snake.fx-2,Snake.fy+1,PIXEL_OFF);	
+ 363               	.LM26:
+ 364 0116 6091 0000 		lds r22,Snake+8
+ 365 011a 8091 0000 		lds r24,Snake+7
+ 366 011e 6F5F      		subi r22,lo8(-(1))
+ 367 0120 40E0      		ldi r20,0
+ 368 0122 8250      		subi r24,lo8(-(-2))
+ 369 0124 0E94 0000 		call dPixel
+ 173:snake.c       **** 	sei();
+ 371               	.LM27:
+ 372               	/* #APP */
+ 373               	 ;  173 "snake.c" 1
+ 374 0128 7894      		sei
+ 375               	 ;  0 "" 2
+ 376               	/* epilogue start */
+ 174:snake.c       **** }
+ 378               	.LM28:
+ 379               	/* #NOAPP */
+ 380 012a DF91      		pop r29
+ 381 012c CF91      		pop r28
+ 382 012e 1F91      		pop r17
+ 383 0130 0F91      		pop r16
+ 384 0132 0895      		ret
+ 386               	.Lscope3:
+ 388               		.stabd	78,0,0
+ 390               	.global	initSnake
+ 392               	initSnake:
+ 393               		.stabd	46,0,0
+  16:snake.c       **** {	
+ 395               	.LM29:
+ 396               	.LFBB4:
+ 397 0134 0F93      		push r16
+ 398 0136 1F93      		push r17
+ 399 0138 CF93      		push r28
+ 400 013a DF93      		push r29
+ 401               	/* prologue: function */
+ 402               	/* frame size = 0 */
+ 403               	/* stack size = 4 */
+ 404               	.L__stack_usage = 4
+  17:snake.c       **** 	Snake.speed = 7;
+ 406               	.LM30:
+ 407 013c 87E0      		ldi r24,lo8(7)
+ 408 013e 8093 0000 		sts Snake+9,r24
+  18:snake.c       **** 	Snake.hx = 12;
+ 410               	.LM31:
+ 411 0142 20E0      		ldi r18,lo8(Snake)
+ 412 0144 30E0      		ldi r19,hi8(Snake)
+ 413 0146 8CE0      		ldi r24,lo8(12)
+ 414 0148 F901      		movw r30,r18
+ 415 014a 8083      		st Z,r24
+  19:snake.c       **** 	Snake.tx = 4;
+ 417               	.LM32:
+ 418 014c C0E0      		ldi r28,lo8(Snake+4)
+ 419 014e D0E0      		ldi r29,hi8(Snake+4)
+ 420 0150 84E0      		ldi r24,lo8(4)
+ 421 0152 8883      		st Y,r24
+  20:snake.c       **** 	Snake.hy = 3;
+ 423               	.LM33:
+ 424 0154 A0E0      		ldi r26,lo8(Snake+1)
+ 425 0156 B0E0      		ldi r27,hi8(Snake+1)
+ 426 0158 83E0      		ldi r24,lo8(3)
+ 427 015a 8C93      		st X,r24
+  21:snake.c       **** 	Snake.ty = 3;
+ 429               	.LM34:
+ 430 015c 00E0      		ldi r16,lo8(Snake+5)
+ 431 015e 10E0      		ldi r17,hi8(Snake+5)
+ 432 0160 F801      		movw r30,r16
+ 433 0162 8083      		st Z,r24
+  22:snake.c       **** 	Snake.hd = RIGHT;
+ 435               	.LM35:
+ 436 0164 86E1      		ldi r24,lo8(22)
+ 437 0166 8093 0000 		sts Snake+2,r24
+  23:snake.c       **** 	Snake.nhd = RIGHT;
+ 439               	.LM36:
+ 440 016a 8093 0000 		sts Snake+3,r24
+  24:snake.c       **** 	Snake.td = RIGHT;
+ 442               	.LM37:
+ 443 016e 8093 0000 		sts Snake+6,r24
+  25:snake.c       **** 	dSnakeElement( Snake.hx, Snake.hy, RIGHT, PIXEL_ON );
+ 445               	.LM38:
+ 446 0172 6C91      		ld r22,X
+ 447 0174 F901      		movw r30,r18
+ 448 0176 8081      		ld r24,Z
+ 449 0178 21E0      		ldi r18,lo8(1)
+ 450 017a 46E1      		ldi r20,lo8(22)
+ 451 017c 0E94 0000 		call dSnakeElement
+  26:snake.c       **** 	dSnakeElement( Snake.tx+SNKSTEP, Snake.ty, RIGHT, PIXEL_ON );
+ 453               	.LM39:
+ 454 0180 F801      		movw r30,r16
+ 455 0182 6081      		ld r22,Z
+ 456 0184 8881      		ld r24,Y
+ 457 0186 21E0      		ldi r18,lo8(1)
+ 458 0188 46E1      		ldi r20,lo8(22)
+ 459 018a 8C5F      		subi r24,lo8(-(4))
+ 460 018c 0E94 0000 		call dSnakeElement
+  27:snake.c       **** 	dSnakeElement( Snake.tx, Snake.ty, RIGHT, PIXEL_ON );
+ 462               	.LM40:
+ 463 0190 F801      		movw r30,r16
+ 464 0192 6081      		ld r22,Z
+ 465 0194 8881      		ld r24,Y
+ 466 0196 21E0      		ldi r18,lo8(1)
+ 467 0198 46E1      		ldi r20,lo8(22)
+ 468               	/* epilogue start */
+  28:snake.c       **** }
+ 470               	.LM41:
+ 471 019a DF91      		pop r29
+ 472 019c CF91      		pop r28
+ 473 019e 1F91      		pop r17
+ 474 01a0 0F91      		pop r16
+  27:snake.c       **** 	dSnakeElement( Snake.tx, Snake.ty, RIGHT, PIXEL_ON );
+ 476               	.LM42:
+ 477 01a2 0C94 0000 		jmp dSnakeElement
+ 479               	.Lscope4:
+ 481               		.stabd	78,0,0
+ 483               	.global	initGame
+ 485               	initGame:
+ 486               		.stabd	46,0,0
+   8:snake.c       **** {
+ 488               	.LM43:
+ 489               	.LFBB5:
+ 490               	/* prologue: function */
+ 491               	/* frame size = 0 */
+ 492               	/* stack size = 0 */
+ 493               	.L__stack_usage = 0
+   9:snake.c       **** 	dClear();
+ 495               	.LM44:
+ 496 01a6 0E94 0000 		call dClear
+  10:snake.c       **** 	dBorder();
+ 498               	.LM45:
+ 499 01aa 0E94 0000 		call dBorder
+  11:snake.c       **** 	initSnake();
+ 501               	.LM46:
+ 502 01ae 0E94 0000 		call initSnake
+  12:snake.c       **** 	PlaceFood();
+ 504               	.LM47:
+ 505 01b2 0C94 0000 		jmp PlaceFood
+ 507               	.Lscope5:
+ 509               		.stabd	78,0,0
+ 512               	.global	dSnake
+ 514               	dSnake:
+ 515               		.stabd	46,0,0
+  61:snake.c       **** {
+ 517               	.LM48:
+ 518               	.LFBB6:
+ 519 01b6 1F93      		push r17
+ 520 01b8 CF93      		push r28
+ 521 01ba DF93      		push r29
+ 522               	/* prologue: function */
+ 523               	/* frame size = 0 */
+ 524               	/* stack size = 3 */
+ 525               	.L__stack_usage = 3
+ 526 01bc EC01      		movw r28,r24
+ 527               	.LBB68:
+ 528               	.LBB69:
+ 126:snake.c       **** 	switch (snake->hd) {
+ 530               	.LM49:
+ 531 01be 8A81      		ldd r24,Y+2
+ 532 01c0 8131      		cpi r24,lo8(17)
+ 533 01c2 01F0      		breq .L20
+ 534 01c4 00F4      		brsh .L21
+ 535 01c6 8031      		cpi r24,lo8(16)
+ 536 01c8 01F0      		breq .L22
+ 537 01ca 00C0      		rjmp .L19
+ 538               	.L21:
+ 539 01cc 8531      		cpi r24,lo8(21)
+ 540 01ce 01F0      		breq .L23
+ 541 01d0 8631      		cpi r24,lo8(22)
+ 542 01d2 01F0      		breq .L24
+ 543 01d4 00C0      		rjmp .L19
+ 544               	.L22:
+ 128:snake.c       **** 			if (snake->nhd == UP)	  chc(&snake->hy,-4, Y_RES);
+ 546               	.LM50:
+ 547 01d6 8B81      		ldd r24,Y+3
+ 548 01d8 8031      		cpi r24,lo8(16)
+ 549 01da 01F4      		brne .L25
+ 550               	.L30:
+ 551               	.LBB70:
+ 552               	.LBB71:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 554               	.LM51:
+ 555 01dc 8981      		ldd r24,Y+1
+ 556 01de 9927      		clr r25
+ 557 01e0 87FD      		sbrc r24,7
+ 558 01e2 9095      		com r25
+ 559 01e4 8C96      		adiw r24,44
+ 560 01e6 00C0      		rjmp .L86
+ 561               	.L20:
+ 562               	.LBE71:
+ 563               	.LBE70:
+ 133:snake.c       **** 			if (snake->nhd == DOWN)   chc(&snake->hy, 4, Y_RES);
+ 565               	.LM52:
+ 566 01e8 8B81      		ldd r24,Y+3
+ 567 01ea 8131      		cpi r24,lo8(17)
+ 568 01ec 01F0      		breq .L31
+ 569               	.L25:
+ 129:snake.c       **** 			if (snake->nhd == RIGHT)  chc(&snake->hx, 4, X_RES); 
+ 571               	.LM53:
+ 572 01ee 8631      		cpi r24,lo8(22)
+ 573 01f0 01F4      		brne .L26
+ 574               	.L28:
+ 575               	.LBB72:
+ 576               	.LBB73:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 578               	.LM54:
+ 579 01f2 8881      		ld r24,Y
+ 580 01f4 9927      		clr r25
+ 581 01f6 87FD      		sbrc r24,7
+ 582 01f8 9095      		com r25
+ 583 01fa 885A      		subi r24,-88
+ 584 01fc 9F4F      		sbci r25,-1
+ 585 01fe 00C0      		rjmp .L87
+ 586               	.L26:
+ 587               	.LBE73:
+ 588               	.LBE72:
+ 130:snake.c       **** 			if (snake->nhd == LEFT)   chc(&snake->hx,-4, X_RES); 
+ 590               	.LM55:
+ 591 0200 8531      		cpi r24,lo8(21)
+ 592 0202 01F4      		brne .L19
+ 593               	.L29:
+ 594               	.LBB74:
+ 595               	.LBB75:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 597               	.LM56:
+ 598 0204 8881      		ld r24,Y
+ 599 0206 9927      		clr r25
+ 600 0208 87FD      		sbrc r24,7
+ 601 020a 9095      		com r25
+ 602 020c 805B      		subi r24,-80
+ 603 020e 9F4F      		sbci r25,-1
+ 604               	.L87:
+ 605 0210 64E5      		ldi r22,lo8(84)
+ 606 0212 70E0      		ldi r23,0
+ 607 0214 0E94 0000 		call __divmodhi4
+ 608 0218 8883      		st Y,r24
+ 609 021a 00C0      		rjmp .L19
+ 610               	.L23:
+ 611               	.LBE75:
+ 612               	.LBE74:
+ 138:snake.c       **** 			if (snake->nhd == LEFT)   chc(&snake->hx,-4, X_RES);
+ 614               	.LM57:
+ 615 021c 8B81      		ldd r24,Y+3
+ 616 021e 8531      		cpi r24,lo8(21)
+ 617 0220 01F0      		breq .L29
+ 618               	.L85:
+ 144:snake.c       **** 			if (snake->nhd == UP) 	  chc(&snake->hy,-4, Y_RES); 
+ 620               	.LM58:
+ 621 0222 8031      		cpi r24,lo8(16)
+ 622 0224 01F0      		breq .L30
+ 145:snake.c       **** 			if (snake->nhd == DOWN)   chc(&snake->hy, 4, Y_RES); 
+ 624               	.LM59:
+ 625 0226 8131      		cpi r24,lo8(17)
+ 626 0228 01F4      		brne .L19
+ 627               	.L31:
+ 628               	.LBB76:
+ 629               	.LBB77:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 631               	.LM60:
+ 632 022a 8981      		ldd r24,Y+1
+ 633 022c 9927      		clr r25
+ 634 022e 87FD      		sbrc r24,7
+ 635 0230 9095      		com r25
+ 636 0232 C496      		adiw r24,52
+ 637               	.L86:
+ 638 0234 60E3      		ldi r22,lo8(48)
+ 639 0236 70E0      		ldi r23,0
+ 640 0238 0E94 0000 		call __divmodhi4
+ 641 023c 8983      		std Y+1,r24
+ 642 023e 00C0      		rjmp .L19
+ 643               	.L24:
+ 644               	.LBE77:
+ 645               	.LBE76:
+ 143:snake.c       **** 			if (snake->nhd == RIGHT)  chc(&snake->hx, 4, X_RES);
+ 647               	.LM61:
+ 648 0240 8B81      		ldd r24,Y+3
+ 649 0242 8631      		cpi r24,lo8(22)
+ 650 0244 01F4      		brne .L85
+ 651 0246 00C0      		rjmp .L28
+ 652               	.L19:
+ 653               	.LBE69:
+ 654               	.LBE68:
+  67:snake.c       **** 	if ( dPixelIsSet(snake->hx, snake->hy) )
+ 656               	.LM62:
+ 657 0248 6981      		ldd r22,Y+1
+ 658 024a 8881      		ld r24,Y
+ 659 024c 0E94 0000 		call dPixelIsSet
+ 660 0250 982F      		mov r25,r24
+  71:snake.c       **** 	if ( snake->hx == snake->fx && snake->hy == snake->fy)
+ 662               	.LM63:
+ 663 0252 8881      		ld r24,Y
+ 664 0254 2F81      		ldd r18,Y+7
+ 665 0256 8213      		cpse r24,r18
+ 666 0258 00C0      		rjmp .L32
+  71:snake.c       **** 	if ( snake->hx == snake->fx && snake->hy == snake->fy)
+ 668               	.LM64:
+ 669 025a 3981      		ldd r19,Y+1
+ 670 025c 2885      		ldd r18,Y+8
+ 671 025e 3213      		cpse r19,r18
+ 672 0260 00C0      		rjmp .L32
+  72:snake.c       **** 			eat = 1;
+ 674               	.LM65:
+ 675 0262 11E0      		ldi r17,lo8(1)
+ 676               	.L33:
+  86:snake.c       **** 	dSnakeElement(snake->hx, snake->hy, snake->nhd, PIXEL_ON);
+ 678               	.LM66:
+ 679 0264 21E0      		ldi r18,lo8(1)
+ 680 0266 4B81      		ldd r20,Y+3
+ 681 0268 6981      		ldd r22,Y+1
+ 682 026a 0E94 0000 		call dSnakeElement
+  88:snake.c       **** 	snake->hd = snake->nhd;
+ 684               	.LM67:
+ 685 026e 8B81      		ldd r24,Y+3
+ 686 0270 8A83      		std Y+2,r24
+  90:snake.c       **** 	if (!eat) 
+ 688               	.LM68:
+ 689 0272 1111      		cpse r17,__zero_reg__
+ 690 0274 00C0      		rjmp .L35
+  93:snake.c       **** 	dSnakeElement(snake->tx,snake->ty,snake->td,PIXEL_OFF);
+ 692               	.LM69:
+ 693 0276 20E0      		ldi r18,0
+ 694 0278 4E81      		ldd r20,Y+6
+ 695 027a 6D81      		ldd r22,Y+5
+ 696 027c 8C81      		ldd r24,Y+4
+ 697 027e 0E94 0000 		call dSnakeElement
+  96:snake.c       **** 	if ( dPixelIsSet( snake->tx + 2 , snake->ty))  snake->td = RIGHT;  // look right
+ 699               	.LM70:
+ 700 0282 8C81      		ldd r24,Y+4
+ 701 0284 6D81      		ldd r22,Y+5
+ 702 0286 8E5F      		subi r24,lo8(-(2))
+ 703 0288 0E94 0000 		call dPixelIsSet
+ 704 028c 8823      		tst r24
+ 705 028e 01F0      		breq .L36
+  96:snake.c       **** 	if ( dPixelIsSet( snake->tx + 2 , snake->ty))  snake->td = RIGHT;  // look right
+ 707               	.LM71:
+ 708 0290 86E1      		ldi r24,lo8(22)
+ 709 0292 8E83      		std Y+6,r24
+ 710               	.L36:
+  97:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty - 2 ))  snake->td = UP; 	 // look up
+ 712               	.LM72:
+ 713 0294 6D81      		ldd r22,Y+5
+ 714 0296 6250      		subi r22,lo8(-(-2))
+ 715 0298 8C81      		ldd r24,Y+4
+ 716 029a 0E94 0000 		call dPixelIsSet
+ 717 029e 8823      		tst r24
+ 718 02a0 01F0      		breq .L37
+  97:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty - 2 ))  snake->td = UP; 	 // look up
+ 720               	.LM73:
+ 721 02a2 80E1      		ldi r24,lo8(16)
+ 722 02a4 8E83      		std Y+6,r24
+ 723               	.L37:
+  98:snake.c       **** 	if ( dPixelIsSet( snake->tx - 2 , snake->ty))  snake->td = LEFT;  // look left
+ 725               	.LM74:
+ 726 02a6 8C81      		ldd r24,Y+4
+ 727 02a8 6D81      		ldd r22,Y+5
+ 728 02aa 8250      		subi r24,lo8(-(-2))
+ 729 02ac 0E94 0000 		call dPixelIsSet
+ 730 02b0 8823      		tst r24
+ 731 02b2 01F0      		breq .L38
+  98:snake.c       **** 	if ( dPixelIsSet( snake->tx - 2 , snake->ty))  snake->td = LEFT;  // look left
+ 733               	.LM75:
+ 734 02b4 85E1      		ldi r24,lo8(21)
+ 735 02b6 8E83      		std Y+6,r24
+ 736               	.L38:
+  99:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty + 2 ))  snake->td = DOWN;  // look down
+ 738               	.LM76:
+ 739 02b8 6D81      		ldd r22,Y+5
+ 740 02ba 6E5F      		subi r22,lo8(-(2))
+ 741 02bc 8C81      		ldd r24,Y+4
+ 742 02be 0E94 0000 		call dPixelIsSet
+ 743 02c2 8823      		tst r24
+ 744 02c4 01F0      		breq .L39
+  99:snake.c       **** 	if ( dPixelIsSet( snake->tx, snake->ty + 2 ))  snake->td = DOWN;  // look down
+ 746               	.LM77:
+ 747 02c6 81E1      		ldi r24,lo8(17)
+ 748 02c8 8E83      		std Y+6,r24
+ 749               	.L39:
+ 102:snake.c       **** 	switch (snake->td) {
+ 751               	.LM78:
+ 752 02ca 8E81      		ldd r24,Y+6
+ 753 02cc 8131      		cpi r24,lo8(17)
+ 754 02ce 01F0      		breq .L40
+ 755 02d0 00F4      		brsh .L41
+ 756 02d2 8031      		cpi r24,lo8(16)
+ 757 02d4 01F0      		breq .+2
+ 758 02d6 00C0      		rjmp .L18
+ 759               	.LBB78:
+ 760               	.LBB79:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 762               	.LM79:
+ 763 02d8 8D81      		ldd r24,Y+5
+ 764 02da 9927      		clr r25
+ 765 02dc 87FD      		sbrc r24,7
+ 766 02de 9095      		com r25
+ 767 02e0 8C96      		adiw r24,44
+ 768 02e2 00C0      		rjmp .L89
+ 769               	.L41:
+ 770               	.LBE79:
+ 771               	.LBE78:
+ 102:snake.c       **** 	switch (snake->td) {
+ 773               	.LM80:
+ 774 02e4 8531      		cpi r24,lo8(21)
+ 775 02e6 01F0      		breq .L43
+ 776 02e8 8631      		cpi r24,lo8(22)
+ 777 02ea 01F0      		breq .+2
+ 778 02ec 00C0      		rjmp .L18
+ 779               	.LBB80:
+ 780               	.LBB81:
+ 153:snake.c       **** 	return *v = (uint8_t)(((int8_t)overflow + (int8_t)*v + offset) % (int8_t)overflow);
+ 782               	.LM81:
+ 783 02ee 8C81      		ldd r24,Y+4
+ 784 02f0 9927      		clr r25
+ 785 02f2 87FD      		sbrc r24,7
+ 786 02f4 9095      		com r25
+ 787 02f6 885A      		subi r24,-88
+ 788 02f8 9F4F      		sbci r25,-1
+ 789 02fa 00C0      		rjmp .L88
+ 790               	.L40:
+ 791               	.LBE81:
+ 792               	.LBE80:
+ 793               	.LBB83:
+ 794               	.LBB84:
+ 795 02fc 8D81      		ldd r24,Y+5
+ 796 02fe 9927      		clr r25
+ 797 0300 87FD      		sbrc r24,7
+ 798 0302 9095      		com r25
+ 799 0304 C496      		adiw r24,52
+ 800               	.L89:
+ 801 0306 60E3      		ldi r22,lo8(48)
+ 802 0308 70E0      		ldi r23,0
+ 803 030a 0E94 0000 		call __divmodhi4
+ 804 030e 8D83      		std Y+5,r24
+ 805 0310 00C0      		rjmp .L18
+ 806               	.L43:
+ 807               	.LBE84:
+ 808               	.LBE83:
+ 809               	.LBB85:
+ 810               	.LBB86:
+ 811 0312 8C81      		ldd r24,Y+4
+ 812 0314 9927      		clr r25
+ 813 0316 87FD      		sbrc r24,7
+ 814 0318 9095      		com r25
+ 815 031a 805B      		subi r24,-80
+ 816 031c 9F4F      		sbci r25,-1
+ 817               	.L88:
+ 818               	.LBE86:
+ 819               	.LBE85:
+ 820               	.LBB87:
+ 821               	.LBB82:
+ 822 031e 64E5      		ldi r22,lo8(84)
+ 823 0320 70E0      		ldi r23,0
+ 824 0322 0E94 0000 		call __divmodhi4
+ 825 0326 8C83      		std Y+4,r24
+ 826 0328 00C0      		rjmp .L18
+ 827               	.L35:
+ 828               	/* epilogue start */
+ 829               	.LBE82:
+ 830               	.LBE87:
+ 120:snake.c       **** }
+ 832               	.LM82:
+ 833 032a DF91      		pop r29
+ 834 032c CF91      		pop r28
+ 835 032e 1F91      		pop r17
+ 118:snake.c       **** 	else PlaceFood();
+ 837               	.LM83:
+ 838 0330 0C94 0000 		jmp PlaceFood
+ 839               	.L32:
+  75:snake.c       **** 	if ( bang && !eat )
+ 841               	.LM84:
+ 842 0334 9923      		tst r25
+ 843 0336 01F0      		breq .L90
+  77:snake.c       **** 		TIMSK1 &= ~(1<<OCIE1A);
+ 845               	.LM85:
+ 846 0338 8091 6F00 		lds r24,111
+ 847 033c 8D7F      		andi r24,lo8(-3)
+ 848 033e 8093 6F00 		sts 111,r24
+  78:snake.c       **** 		TIMSK1 &= ~(1<<ICIE1); // Timer1 Input Capture Interrupt Enable
+ 850               	.LM86:
+ 851 0342 8091 6F00 		lds r24,111
+ 852 0346 8F7D      		andi r24,lo8(-33)
+ 853 0348 8093 6F00 		sts 111,r24
+  79:snake.c       **** 		delay_ms(2000);
+ 855               	.LM87:
+ 856 034c 60E0      		ldi r22,0
+ 857 034e 70E0      		ldi r23,0
+ 858 0350 8AEF      		ldi r24,lo8(-6)
+ 859 0352 94E4      		ldi r25,lo8(68)
+ 860 0354 0E94 0000 		call delay_ms
+  80:snake.c       **** 		initGame();
+ 862               	.LM88:
+ 863 0358 0E94 0000 		call initGame
+  81:snake.c       **** 		TIMSK1 = (1<<OCIE1A);
+ 865               	.LM89:
+ 866 035c 82E0      		ldi r24,lo8(2)
+ 867 035e 8093 6F00 		sts 111,r24
+  82:snake.c       **** 		TIMSK1 |= (1<<ICIE1); // Timer1 Input Capture Interrupt Enable
+ 869               	.LM90:
+ 870 0362 8091 6F00 		lds r24,111
+ 871 0366 8062      		ori r24,lo8(32)
+ 872 0368 8093 6F00 		sts 111,r24
+  83:snake.c       **** 		return 0;
+ 874               	.LM91:
+ 875 036c 00C0      		rjmp .L18
+ 876               	.L90:
+  75:snake.c       **** 	if ( bang && !eat )
+ 878               	.LM92:
+ 879 036e 10E0      		ldi r17,0
+ 880 0370 00C0      		rjmp .L33
+ 881               	.L18:
+ 882               	/* epilogue start */
+ 120:snake.c       **** }
+ 884               	.LM93:
+ 885 0372 DF91      		pop r29
+ 886 0374 CF91      		pop r28
+ 887 0376 1F91      		pop r17
+ 888 0378 0895      		ret
+ 893               	.Lscope6:
+ 895               		.stabd	78,0,0
+ 896               		.comm	Snake,10,1
+ 899               	.Letext0:
+ 900               		.ident	"GCC: (GNU) 4.8.0"
+ 901               	.global __do_clear_bss
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 snake.c
+     /tmp/ccoGv6mQ.s:2      *ABS*:000000000000003e __SP_H__
+     /tmp/ccoGv6mQ.s:3      *ABS*:000000000000003d __SP_L__
+     /tmp/ccoGv6mQ.s:4      *ABS*:000000000000003f __SREG__
+     /tmp/ccoGv6mQ.s:5      *ABS*:0000000000000000 __tmp_reg__
+     /tmp/ccoGv6mQ.s:6      *ABS*:0000000000000001 __zero_reg__
+     /tmp/ccoGv6mQ.s:143    .text:0000000000000000 dBorder
+     /tmp/ccoGv6mQ.s:202    .text:0000000000000040 dSnakeElement
+     /tmp/ccoGv6mQ.s:282    .text:0000000000000094 PlaceFood
+                            *COM*:000000000000000a Snake
+     /tmp/ccoGv6mQ.s:392    .text:0000000000000134 initSnake
+     /tmp/ccoGv6mQ.s:485    .text:00000000000001a6 initGame
+     /tmp/ccoGv6mQ.s:514    .text:00000000000001b6 dSnake
+
+UNDEFINED SYMBOLS
+dLine
+dRectangle
+srand
+rand
+__divmodhi4
+dPixelIsSet
+dPixel
+dClear
+delay_ms
+__do_clear_bss
