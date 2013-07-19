@@ -22,5 +22,6 @@ _________________________________________________________________________
 // #include "USART.h"
 #include "cBuffer.h"
 #include "lph7366.h"
+#include "DHT22.h"
 
 

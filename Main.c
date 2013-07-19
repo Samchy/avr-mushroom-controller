@@ -1,5 +1,4 @@
 #include "Main.h"
-#include "lph7366.h"
 
 extern cBufferType rc5buffer;
 void CheckIR(void);
@@ -23,7 +22,7 @@ int main(void)
 	dContrast(0x40); // 0x25 a mers prima oară // 0x40 a mers după adăugarea rezistorilor 
 
 	dClear();
-	dCursor(3,0);
+	dCursor(1,0);
 	dText("Hello");
 	dRefresh();
 
@@ -33,6 +32,18 @@ int main(void)
 	while(1)
 	{
 		CheckIR();
+		if( DHT22_State() == DHT22_READY )
+		{
+			uint8_t string[10];
+			sprintf(string, "%.1f",DHT22_ReadTemperature());
+			dCursor(3,0);
+			dText(string);
+			sprintf(string, "%.1f", DHT22_ReadHumidity());
+			dCursor(3,0);
+			dText(string);
+
+			dRefresh();
+		}
 	}
 	return 0;
 }
@@ -88,9 +99,10 @@ void CheckIR(void)
 			break;
 			case 6: tbi(PORTD,6); break;
 			case 7: tbi(PORTD,7); break;
+			case 9: DHT22_Read(); break;
 	 
 		}
-		dCursor(3,0);				
+		dCursor(5,0);				
 		sprintf(debugstr,"%d",getBacklight()); 
 		dText(debugstr);
 		dRefresh();

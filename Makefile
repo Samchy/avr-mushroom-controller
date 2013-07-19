@@ -39,8 +39,8 @@ FORMAT = ihex
 
 # If there is more than one source file, append them above, or modify and
 # uncomment the following:
-SRC +=  lph7366.c timer1.c rc5.c cBuffer.c backlight.c Main.c
-# USART.c cBuffers.c 
+SRC +=  lph7366.c timer1.c rc5.c cBuffer.c backlight.c Main.c DHT22.c
+# USART.c
  
 
 # You can also wrap lines by appending a backslash to the end of the line:
