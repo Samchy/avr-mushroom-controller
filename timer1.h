@@ -1,10 +1,11 @@
 /*______________________________________________________________________
 	Time measuring and delaying routines using 16-bit Timer1 
 
-Controller:	ATmega 168 (Clock: 14,7456 Mhz-external)
-Compiler:	AVR-GCC
-Author:		Darius Berghe
-Date:		Mar 2012
+Controller:	ATmega 168 
+Compiler  :	AVR-GCC
+Author    :	Darius Berghe
+Date      :	Mar 2012
+Tab spaces:	4
 
 Description: 
 	util/delay.h provides _delay_ms() and _delay_us() functions but 
@@ -13,11 +14,9 @@ Description:
 	
 	The assumptions for these functions to work as expected are:
 	
-	- Timer1 counts from BOTTOM to MAX and resets back to BOTTOM
+	- Timer1 counts from BOTTOM to MAX and resets back to BOTTOM.
 	- the argument given to basic_delay_ms or delay_us should not
-	  surpass the maximum possible delay with a certain prescaler.
-	
-	Therefore, using a e.g. PWM with Timer1 will mess up everything. 
+	  surpass the maximum possible delay with a certain prescaler. 
 _________________________________________________________________________
 */
 
@@ -28,8 +27,9 @@ _________________________________________________________________________
 #include "Main.h"
 #include "utils.h"
 
+/* Edit the prescaler to obtain the desired precision in measuring (lower = better) */
 #define T1_PRESCALER 	8
-#define T1_OVF_VALUE     65535
+#define T1_OVF_VALUE    65535
 
 typedef uint16_t time_t ;
 
@@ -67,13 +67,13 @@ float difftime_us(time_t time2, time_t time1);
 float difftime_ms(time_t time2, time_t time1);
 
 
-/* Busy delay in microseconds */
+/* Basic busy delay in microseconds */
 void delay_us(float);
 
-/* Busy delay in miliseconds */
+/* Basic busy delay in miliseconds */
 void basic_delay_ms(float);
 
-/* Long delay in miliseconds */
+/* Any delay in miliseconds (not extremely accurate) */
 void delay_ms(float);
 
 #endif //__TIMER_H

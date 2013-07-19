@@ -3,7 +3,6 @@
 
 # make all = Make software and program
 # make clean = Clean out built project files.
-# make clean = Clean out built project files.
 # make program = Download the hex file to the device, using avrdude.  Please
 #                customize the avrdude settings below first!
 
@@ -14,7 +13,7 @@ MCU = atmega168p
 #F_CPU = 14745600
 
 # Target file name (without extension).
-PROJECT = LCD
+PROJECT = control-ciuperci
 
 # Programming hardware: type avrdude -c ?
 # to get a full listing.

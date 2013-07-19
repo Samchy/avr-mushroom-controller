@@ -20,7 +20,7 @@ int main(void)
 	initTimer1();
 	rc5init(rc5store, RC5_INVERTED); // Enable user control
 	initLCD();
-	dContrast(0x40); // 0x25
+	dContrast(0x40); // 0x25 a mers prima oară // 0x40 a mers după adăugarea rezistorilor 
 
 	dClear();
 	dCursor(3,0);
@@ -36,6 +36,7 @@ int main(void)
 	}
 	return 0;
 }
+
 /**--------------------------------------------------------------------------------------------------
   Description  :  Store the command to the rc5buffer circular buffer and filter repetitive commands.
 				  This function is called by the rc5 library after successfull decoding.

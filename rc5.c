@@ -196,7 +196,7 @@ ISR(INT1_vect)
 		cBufferWrite(&rc5buffer, 104);	
 		// enable the OC1A compare interrupt. when it triggers, it means the current message stream has ended an RC5 state
 		// machine can be safely reset. otherwise, the remaining bits would mess it and you dont want that.
-		OCR1A = clock() + ms2tk(5); // a new bit detected - delay the cutover time by 5ms
+		OCR1A = clock() + ms2tk( 1 + (RC5_TOTAL_BITS - rc5.context->bits) * MEAN_LONG_INTERVAL / 1000); 
 		TIMSK1 |= (1<<OCIE1A); // enable interrupt
 	}
 }
