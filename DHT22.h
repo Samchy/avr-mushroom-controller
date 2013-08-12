@@ -9,7 +9,7 @@
 #define DHT22_PIN	0
 
 // Tolerance of measurements in microseconds
-#define TOLERANCE	15
+#define DHT22_TOLERANCE	15
 
 typedef struct {
 	float Temperature;

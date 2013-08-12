@@ -1,9 +1,11 @@
 #include "Main.h"
+#include "backlight.h"
+#include <util/delay.h>
 
 extern cBufferType rc5buffer;
 void CheckIR(void);
-
 void rc5store(uint16_t);
+void timertest(void);
 
 //  static FILE usartstream = FDEV_SETUP_STREAM(usartSendChar, usartGet,_FDEV_SETUP_RW);
 
@@ -15,28 +17,33 @@ int main(void)
 	sbi(DDRD,6); sbi(PORTD,6);
 	sbi(DDRD,7); sbi(PORTD,7);
 
+	// initial state of the ICP
+	cbi(DHT22_DIR, DHT22_PIN);
+	sbi(DHT22_PORT, DHT22_PIN);
+
 	//  initUSART();
 	initTimer1();
 	rc5init(rc5store, RC5_INVERTED); // Enable user control
 	initLCD();
-	dContrast(0x40); // 0x25 a mers prima oară // 0x40 a mers după adăugarea rezistorilor 
+	dContrast(0x40); // 0x40 seems to work with the resistor hack
 
 	dClear();
-	dCursor(1,0);
-	dText("Hello");
+	dCursor(0,0);
+	dText("Reset");
 	dRefresh();
 
 	sei();
-	 initBacklight();
+	initBacklight();
 
 	while(1)
 	{
 		CheckIR();
+
 		if( DHT22_State() == DHT22_READY )
 		{
 			uint8_t string[10];
-			sprintf(string, "%.1f",DHT22_ReadTemperature());
-			dCursor(3,0);
+			sprintf(string, "%.1f", DHT22_ReadTemperature());
+			dCursor(2,0);
 			dText(string);
 			sprintf(string, "%.1f", DHT22_ReadHumidity());
 			dCursor(3,0);
@@ -44,6 +51,7 @@ int main(void)
 
 			dRefresh();
 		}
+
 	}
 	return 0;
 }
@@ -68,7 +76,8 @@ void rc5store(uint16_t data)
 			return;
 		prevtogglebit = currtogglebit;	
 	}
-		cBufferWrite(&rc5buffer, (int8_t)command);	
+
+	cBufferWrite(&rc5buffer, (int8_t)command);	
 }
 
 /**--------------------------------------------------------------------------------------------------
@@ -84,8 +93,8 @@ void CheckIR(void)
 		cBufferRead(&rc5buffer, (int8_t *)&command);
 		dClear();
 		dCursor(0,0);
-		char debugstr[4];
-		sprintf(debugstr, "%d", command);
+		char debugstr[6];
+		sprintf(debugstr, "C:%d", command);
 		dText(debugstr);
 
 		switch (command) {
@@ -100,13 +109,36 @@ void CheckIR(void)
 			case 6: tbi(PORTD,6); break;
 			case 7: tbi(PORTD,7); break;
 			case 9: DHT22_Read(); break;
+			case 8: timertest(); break;
 	 
 		}
-		dCursor(5,0);				
-		sprintf(debugstr,"%d",getBacklight()); 
-		dText(debugstr);
+
 		dRefresh();
 	}
+}
+
+void timertest()
+{	uint8_t errorstr[10];
+	uint16_t time1, time2, difftk;
+	float diffus, diffms;
+
+	time1 = clock();	
+	_delay_us(80);
+	time2 = clock();
+
+	difftk = difftime_tk(time2, time1);
+	diffus = tk2us(difftk);
+
+	dCursor(3,0); 
+	sprintf(errorstr, "difftk:%u", difftk);	
+	dText(errorstr);
+
+	dCursor(5,0); 
+	sprintf(errorstr, "diffus:%.1f", diffus);	
+	dText(errorstr);
+
+	dRefresh();
+
 }
 
 

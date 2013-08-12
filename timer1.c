@@ -8,6 +8,9 @@
 --------------------------------------------------------------------------------------------------**/
 void initTimer1()
 {
+	TCCR1A = 0;
+	TCCR1B = 0;
+
 	#if T1_PRESCALER == 1
 		TCCR1B |= (1<<CS10); 
 	#elif T1_PRESCALER == 8
@@ -137,7 +140,7 @@ void delay_us(float us)
 	
 	time_t start=TCNT1; // read current
  	float calibration = 4.241; // Empirical calibration factor
-	time_t stop = start + us2tk(us-calibration);
+	time_t stop = start + us2tk(us - calibration);
 	
 	if(stop<start) // If an overflow will occur in order to reach stop value
 		while(TCNT1>start); // loop until overflow

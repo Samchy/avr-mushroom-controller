@@ -283,7 +283,9 @@ program: $(PROJECT).hex $(PROJECT).eep
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
 
 
-
+# Reset the device
+reset:
+	$(AVRDUDE) -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
 
 # Create final output files (.hex, .eep) from ELF output file.
 %.hex: %.elf

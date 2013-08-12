@@ -1,9 +1,15 @@
 #include <stdint.h>
+#include <string.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "utils.h"
 #include "timer1.h"
 #include "DHT22.h"
+#include "lph7366.h"
+
+#define DHT22_DEBUG	
+// #define DHT22_DEBUG_T
+volatile uint16_t t1,t2,t3;
 
 typedef enum {
 		IDLE,
@@ -34,19 +40,6 @@ float DHT22_ReadHumidity()
 	return DHT22_Info.Humidity;
 }
 
-void DHT22_Read()
-{	
-	// Configure the pin as GPIO to send the Start signal
-	sbi(DHT22_DIR, DHT22_PIN);
-	cbi(DHT22_PORT, DHT22_PIN); // send start signal	
-
-	State = START;	
-
-	// interrupt at 1 ms
-	OCR1B = clock() + ms2tk(1);
-	sbi(TIMSK1, OCIE1B);
-}
-
 DHT22_STATE_Type DHT22_State(void)
 {
 	if( State == READY )
@@ -57,22 +50,43 @@ DHT22_STATE_Type DHT22_State(void)
 		return DHT22_BUSY;
 }
 
+void DHT22_Read()
+{	
+	if( State != IDLE ); //return;
+
+	State = START;
+
+	// Configure the pin as GPIO out to send the Start signal
+	sbi(DHT22_DIR, DHT22_PIN);
+	cbi(DHT22_PORT, DHT22_PIN); // send start signal		
+#ifdef DHT22_DEBUG_T
+	t1 = clock();
+#endif
+	// trigger compare interrupt in 1 ms
+	OCR1B = clock() + ms2tk(1);
+	sbi(TIMSK1, OCIE1B);
+}
+
 /**--------------------------------------------------------------------------------------------------
-  Description	:  Timer1 COMPB vector - used to generate a 1ms pause in the DHT22 state machine
+  Description	:  Timer1 COMPB vector - used for generating master signals in the DHT22 state machine
 --------------------------------------------------------------------------------------------------**/
 ISR (TIMER1_COMPB_vect)
 {
-	// disable this interrupt
-	TIMSK1 &= ~(1<<OCIE1B);
-
-	if( State == START )
+	uint8_t errorstr[10];
+	if( State == START)
 	{
 		State = WAIT_ACK;
-		prevICR = clock();
+		//configure ICP pin as input with pullup
+		cbi(DHT22_DIR, DHT22_PIN);
+		sbi(DHT22_PORT, DHT22_PIN);
+		// disable this interrupt
+		cbi(TIMSK1, OCIE1B);
 		// configure ICP interrupt
 		sbi(TIMSK1, ICIE1);
 		// select negative edge
 		cbi(TCCR1B, ICES1); 
+
+		prevICR = clock();
 	}
 }
 
@@ -81,119 +95,156 @@ ISR (TIMER1_COMPB_vect)
 --------------------------------------------------------------------------------------------------**/
 ISR(TIMER1_CAPT_vect)
 {
-	uint16_t CAP;
+	uint16_t CAP, tcntval;
+	float usCAP;
 	static uint64_t rxdata = 0;
 	static uint8_t idx = 0;
 	uint16_t temperature, humidity;
 	uint8_t crc;
 	int8_t sign;
-	
-	cbi(TIFR1, ICF1); // clear flag for this interrupt
-	CAP = tk2ms(ICR1 - prevICR);
-	prevICR = CAP;
-	
+	uint8_t errorstr[10];	
+	uint8_t debug_t[15];
+
+	tcntval = TCNT1;
+	CAP = difftime_tk(tcntval, prevICR); // time in ticks since last interrupt
+	prevICR = tcntval; 
+	usCAP = tk2us(CAP); // from now on we're working with us
+/*
+#ifdef DHT22_DEBUG
+
+		
+	dCursor(3,0); 
+	sprintf(errorstr, "prev:%u", prevICR);
+	dText(errorstr);
+	dCursor(1,0); 
+	sprintf(errorstr, "usCAP:%f", usCAP);
+	dText(errorstr);
+	dCursor(2,0);
+	sprintf(errorstr, "S:%u", State);
+	dText(errorstr);
+	dCursor(4,0);
+	sprintf(errorstr, "curr:%u", tcntval);
+	dText(errorstr);
+#endif
+*/
+
+
 	switch ( State ) {
+
 		case WAIT_ACK:
-					if( CAP <= 40 )
-					{
-						State = ACK;
-						// select positive edge
-						sbi(TCCR1B, ICES1); 
-					}
-					else
-						State = IDLE;
-		break;
-					
+			if( (usCAP >= 30 - DHT22_TOLERANCE) && (usCAP <= 30 + DHT22_TOLERANCE) )
+			{ 
+				State = ACK;
+				// select positive edge
+				sbi(TCCR1B, ICES1); 
+			}
+			else
+				State = IDLE;	
+		break;	
+				
 		case ACK:	
-					if( (CAP >= 80 - TOLERANCE) && (CAP <= 80 + TOLERANCE) )
-					{
-						State = WAIT_DATA_START;
-						// select negative edge
-						cbi(TCCR1B, ICES1); 
-					}
-					else
-							State = IDLE;
+			if( (usCAP >= 80 - DHT22_TOLERANCE) && (usCAP <= 80 + DHT22_TOLERANCE) )
+			{
+				State = WAIT_DATA_START;
+				// select negative edge
+				cbi(TCCR1B, ICES1); 
+			}
+			else
+				State = IDLE;
 		break;
 					
 		case WAIT_DATA_START:	
-					if( (CAP >= 80 - TOLERANCE) && (CAP <= 80 + TOLERANCE) )
-					{
-						State = WAIT_DATA;
-						// select positive edge
-						sbi(TCCR1B, ICES1); 
-					}
-					else
-							State = IDLE;
+			if( (usCAP >= 80 - DHT22_TOLERANCE) && (usCAP <= 80 + DHT22_TOLERANCE) )
+			{
+				State = WAIT_DATA;
+				// select positive edge
+				sbi(TCCR1B, ICES1); 
+			}
+			else
+				State = IDLE;
 		break;
 					
 		case WAIT_DATA:	
-					if( ( CAP >= 50 - TOLERANCE) && ( CAP <= 50 + TOLERANCE) )
-					{
-						State = DATA;
-						// select negative edge
-						cbi(TCCR1B, ICES1); 
-					}
-					else
-							State = IDLE;
+			if( ( usCAP >= 50 - DHT22_TOLERANCE) && ( usCAP <= 50 + DHT22_TOLERANCE) )
+			{
+				State = DATA;
+				// select negative edge
+				cbi(TCCR1B, ICES1); 
+			}
+			else
+				State = IDLE;
 		break;
 					
 		case DATA:	
-					// shift all bits to left to make space for the new one
-					rxdata <<= 1;
-					if( (CAP >= 27 - TOLERANCE) && (CAP <= 27 + TOLERANCE) )
+			// shift all bits to left to make space for the new one
+			rxdata <<= 1;
+			if( (usCAP >= 27 - DHT22_TOLERANCE) && (usCAP <= 27 + DHT22_TOLERANCE) )
+			{
+				State = WAIT_DATA;
+				// select positive edge
+				sbi(TCCR1B, ICES1); 
+				idx++;
+			}
+			else if( (usCAP >= 70 - DHT22_TOLERANCE) && (usCAP <= 70 + DHT22_TOLERANCE) )
+			{
+				State = WAIT_DATA;
+				// select positive edge
+				sbi(TCCR1B, ICES1); 
+				rxdata |= 1;
+				idx++;
+			}
+			else
+			{
+				rxdata = 0;
+				State = IDLE;
+			}
+			
+			if( idx == 40 )
+			{												
+				crc = (uint8_t) rxdata;
+				temperature = (uint16_t) (rxdata >> 8);
+				humidity = (uint16_t) (rxdata >> 24);
+#ifdef DHT22_DEBUG
+				dCursor(5,0);				
+				dText("MSG RECV");
+#endif
+				
+				if( \
+					( \
+					(uint8_t) \
+						( (uint8_t)(humidity) + (uint8_t)(humidity >> 8) \
+						+ (uint8_t)(temperature) + (uint8_t)(temperature >> 8) \
+					) \
+					!= crc ) )
 					{
-						State = WAIT_DATA;
-						// select positive edge
-						sbi(TCCR1B, ICES1); 
-						idx++;
-					}
-					else if( (CAP >= 70 - TOLERANCE) && (CAP <= 70 + TOLERANCE) )
-					{
-						State = WAIT_DATA;
-						// select positive edge
-						sbi(TCCR1B, ICES1); 
-						rxdata |= 1;
-						idx++;
-					}
-					else
-					{
-						rxdata = 0;
 						State = IDLE;
+#ifdef DHT22_DEBUG
+						dCursor(5,0);				
+						dText("CRC ERROR");
+#endif
 					}
+				
+				else
+				{
+					if( temperature & 0x8000 )
+						sign = -1;
+					else
+						sign = 1;
+					temperature &= ~0x8000;
+					DHT22_Info.Temperature = (float) temperature / 10 * sign;
+					DHT22_Info.Humidity = (float) humidity / 10;
 					
-					if( idx == 40 )
-					{												
-						crc = (uint8_t) rxdata;
-						temperature = (uint16_t) (rxdata >> 8);
-						humidity = (uint16_t) (rxdata >> 24);
-						
-						if( \
-							( \
-							(uint8_t) \
-								( (uint8_t)(humidity) + (uint8_t)(humidity >> 8) \
-								+ (uint8_t)(temperature) + (uint8_t)(temperature >> 8) \
-							) \
-							!= crc ) )
-							
-							State = IDLE;
-						
-						else
-						{
-							if( temperature & 0x8000 )
-								sign = -1;
-							else
-								sign = 1;
-							temperature &= ~0x8000;
-							DHT22_Info.Temperature = (float) temperature / 10 * sign;
-							DHT22_Info.Humidity = (float) humidity / 10;
-							
-							State = READY;
-							rxdata = 0;
-							
-							// Disable ICP interrupt
-							cbi(TIMSK1, ICIE1);
-						}
-					}
+					State = READY;
+					rxdata = 0;
+					
+					// Disable ICP interrupt
+					cbi(TIMSK1, ICIE1);
+#ifdef DHT22_DEBUG
+				dCursor(5,0);				
+				dText("OK");
+#endif
+				}
+			}
 		break;
 	};
 	
@@ -202,6 +253,12 @@ ISR(TIMER1_CAPT_vect)
 	{
 		idx = 0;
 		rxdata = 0;
+
+#ifdef DHT22_DEBUG
+		dCursor(5,0);	
+		dText("ERROR");
+		dRefresh();
+#endif
 
 		// Disable ICP interrupt
 		cbi(TIMSK1, ICIE1);
