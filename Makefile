@@ -39,7 +39,7 @@ FORMAT = ihex
 
 # If there is more than one source file, append them above, or modify and
 # uncomment the following:
-SRC +=  lph7366.c timer1.c rc5.c fifo.c backlight.c Main.c DHT22.c
+SRC +=  lph7366.c timer1.c timer0.c rc5.c fifo.c backlight.c Main.c DHT22.c
 # USART.c
  
 

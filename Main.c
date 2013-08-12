@@ -1,11 +1,11 @@
 #include "Main.h"
 #include "backlight.h"
 #include <util/delay.h>
+#include "timer0.h"
 
 extern fifoType rc5buffer;
 void CheckIR(void);
 void rc5store(uint16_t);
-void timertest(void);
 
 //  static FILE usartstream = FDEV_SETUP_STREAM(usartSendChar, usartGet,_FDEV_SETUP_RW);
 
@@ -21,7 +21,7 @@ int main(void)
 	cbi(DHT22_DIR, DHT22_PIN);
 	sbi(DHT22_PORT, DHT22_PIN);
 
-	//  initUSART();
+	initTimer0();
 	initTimer1();
 	rc5init(rc5store, RC5_INVERTED); // Enable user control
 	initLCD();
@@ -38,7 +38,7 @@ int main(void)
 	while(1)
 	{
 		CheckIR();
-
+		
 		if( DHT22_State() == DHT22_READY )
 		{
 			uint8_t string[10];
@@ -50,6 +50,12 @@ int main(void)
 			dText(string);
 
 			dRefresh();
+		}
+
+		if(OneSecondFlag)
+		{
+			DHT22_Read();
+			OneSecondFlag = 0;
 		}
 	}
 
@@ -120,30 +126,6 @@ void CheckIR(void)
 
 		dRefresh();
 	}
-}
-
-void timertest()
-{	uint8_t errorstr[10];
-	uint16_t time1, time2, difftk;
-	float diffus, diffms;
-
-	time1 = clock();	
-	_delay_us(70);
-	time2 = clock();
-
-	difftk = difftime_tk(time2, time1);
-	diffus = tk2us(difftk);
-
-	dCursor(3,0); 
-	sprintf(errorstr, "difftk:%u", difftk);	
-	dText(errorstr);
-
-	dCursor(5,0); 
-	sprintf(errorstr, "diffus:%.1f", diffus);	
-	dText(errorstr);
-
-	dRefresh();
-
 }
 
 

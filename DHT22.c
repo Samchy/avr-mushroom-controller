@@ -8,8 +8,7 @@
 #include "lph7366.h"
 #include "fifo.h"
 
-// #define DHT22_DEBUG	
-#define DHT22_PIN_DEBUG
+// #define DHT22_PIN_DEBUG
 
 volatile uint16_t t1,t2,t3;
 
@@ -24,7 +23,7 @@ typedef enum {
 		READY,			/* Transfer successfully finished; user can read the data. */
 } StateMachine_Type;
 
-volatile StateMachine_Type State = IDLE;
+volatile StateMachine_Type dhtstate = IDLE;
 
 volatile uint16_t prevICR;
 
@@ -32,21 +31,21 @@ DHT22_Info_Type DHT22_Info;
 
 float DHT22_ReadTemperature()
 {
-	State = IDLE;
+	dhtstate = IDLE;
 	return DHT22_Info.Temperature;
 }
 
 float DHT22_ReadHumidity()
 {
-	State = IDLE;
+	dhtstate = IDLE;
 	return DHT22_Info.Humidity;
 }
 
 DHT22_STATE_Type DHT22_State(void)
 {
-	if( State == READY )
+	if( dhtstate == READY )
 		return DHT22_READY;
-	else if ( State == IDLE )
+	else if ( dhtstate == IDLE )
 		return DHT22_IDLE;
 	else 
 		return DHT22_BUSY;
@@ -54,23 +53,23 @@ DHT22_STATE_Type DHT22_State(void)
 
 void DHT22_Read()
 {	
-	if( State != IDLE || State != READY ); //return;
-
-	State = START;
-
+	if( dhtstate == IDLE || dhtstate == READY )
+	{
 #ifdef DHT22_PIN_DEBUG
-	cbi(PORTD,7);
-	// clear the flag of ICP interrupt
-	sbi(TIFR1, ICF1);
+		cbi(PORTD,7);
 #endif
-	// Configure the pin as GPIO out to send the Start signal
-	sbi(DHT22_DIR, DHT22_PIN);
-	cbi(DHT22_PORT, DHT22_PIN); // send start signal		
+		dhtstate = START;
 
-	// trigger compare interrupt in 1 ms
-	OCR1B = clock() + ms2tk(1.0);
-	sbi(TIFR1, OCIE1B);
-	sbi(TIMSK1, OCIE1B);
+		// Configure the pin as GPIO out to send the Start signal
+		sbi(DHT22_DIR, DHT22_PIN);
+		cbi(DHT22_PORT, DHT22_PIN); // send start signal		
+
+		// trigger compare interrupt in 1 ms
+		OCR1B = clock() + ms2tk(1.0);
+		sbi(TIFR1, OCIE1B);
+		sbi(TIMSK1, OCIE1B);
+
+	}
 }
 
 /**--------------------------------------------------------------------------------------------------
@@ -79,11 +78,11 @@ void DHT22_Read()
 ISR (TIMER1_COMPB_vect)
 {
 #ifdef DHT22_PIN_DEBUG
-	sbi(PORTD,7);cbi(PORTD,7);sbi(PORTD,7);cbi(PORTD,7);sbi(PORTD,7);
+	sbi(PORTD,7);cbi(PORTD,7);sbi(PORTD,7);
 #endif
-	if( State == START)
+	if( dhtstate == START )
 	{
-		State = WAIT_ACK;
+		dhtstate = WAIT_ACK;
 		//configure ICP pin as input with pullup
 		cbi(DHT22_DIR, DHT22_PIN);
 		sbi(DHT22_PORT, DHT22_PIN);
@@ -112,21 +111,18 @@ ISR(TIMER1_CAPT_vect)
 	uint16_t temperature, humidity;
 	uint8_t crc;
 	int8_t sign;
-#ifdef DHT22_DEBUG
-	uint8_t errorstr[10];	
-#endif
 
 #ifdef DHT22_PIN_DEBUG
-	tbi(PORTD,7);
+	tbi(PORTD,7);tbi(PORTD,7);tbi(PORTD,7);
 #endif
 	currICR = TCNT1;
 	CAP = difftime_tk(currICR, prevICR) / 2;
 	prevICR = currICR; 
 
-	switch ( State ) {
+	switch ( dhtstate ) {
 
 		case WAIT_ACK:
-			State = ACK;
+			dhtstate = ACK;
 			// select positive edge
 			sbi(TCCR1B, ICES1); 
 		break;	
@@ -134,39 +130,39 @@ ISR(TIMER1_CAPT_vect)
 		case ACK:	
 			if( (CAP >= 80 - DHT22_TOLERANCE) && (CAP <= 80 + DHT22_TOLERANCE) )
 			{
-				State = WAIT_DATA_START;
+				dhtstate = WAIT_DATA_START;
 				// select negative edge
 				cbi(TCCR1B, ICES1); 
 			}
 			else
 			{	
-				State = IDLE;	
+				dhtstate = IDLE;	
 			}
 		break;
 					
 		case WAIT_DATA_START:	
 			if( (CAP >= 80 - DHT22_TOLERANCE) && (CAP <= 80 + DHT22_TOLERANCE) )
 			{
-				State = WAIT_DATA;
+				dhtstate = WAIT_DATA;
 				// select positive edge
 				sbi(TCCR1B, ICES1); 
 			}
 			else
 			{
-				State = IDLE;
+				dhtstate = IDLE;
 			}
 		break;
 					
 		case WAIT_DATA:	
 			if( ( CAP >= 50 - DHT22_TOLERANCE) && ( CAP <= 50 + DHT22_TOLERANCE) )
 			{
-				State = DATA;
+				dhtstate = DATA;
 				// select negative edge
 				cbi(TCCR1B, ICES1); 
 			}
 			else
 			{	
-				State = IDLE;	
+				dhtstate = IDLE;	
 			}
 		break;
 					
@@ -175,14 +171,14 @@ ISR(TIMER1_CAPT_vect)
 			rxdata <<= 1;
 			if( (CAP >= 27 - DHT22_TOLERANCE) && (CAP <= 27 + DHT22_TOLERANCE) )
 			{
-				State = WAIT_DATA;
+				dhtstate = WAIT_DATA;
 				// select positive edge
 				sbi(TCCR1B, ICES1); 
 				idx++;
 			}
 			else if( (CAP >= 70 - DHT22_TOLERANCE) && (CAP <= 70 + DHT22_TOLERANCE) )
 			{
-				State = WAIT_DATA;
+				dhtstate = WAIT_DATA;
 				// select positive edge
 				sbi(TCCR1B, ICES1); 
 				rxdata |= 1;
@@ -190,8 +186,7 @@ ISR(TIMER1_CAPT_vect)
 			}
 			else
 			{
-				rxdata = 0;
-				State = IDLE;
+				dhtstate = IDLE;
 			}
 			
 			if( idx == 40 )
@@ -208,11 +203,7 @@ ISR(TIMER1_CAPT_vect)
 					) \
 					!= crc ) )
 					{
-						State = IDLE;
-#ifdef DHT22_DEBUG
-						dCursor(4,0);				
-						dText("CRC ERROR");
-#endif
+						dhtstate = IDLE;
 					}
 				
 				else
@@ -225,22 +216,14 @@ ISR(TIMER1_CAPT_vect)
 					DHT22_Info.Temperature = (float) temperature / 10 * sign;
 					DHT22_Info.Humidity = (float) humidity / 10;
 					
-					State = READY;
+					dhtstate = READY;
 					rxdata = 0;
+					idx = 0;
 					
 					// Disable ICP interrupt
 					cbi(TIMSK1, ICIE1);
 					// clear the flag of ICP interrupt
 					sbi(TIFR1, ICF1);
-#ifdef DHT22_DEBUG
-					dCursor(2,0);
-					sprintf(errorstr,"T: %.1f", DHT22_Info.Temperature);
-					dText(errorstr);
-					dCursor(3,0);
-					sprintf(errorstr, "H: %.1f", DHT22_Info.Humidity);				
-					dText(errorstr);
-					dRefresh();
-#endif
 #ifdef DHT22_PIN_DEBUG
 					tbi(PORTD,7);
 #endif
@@ -249,13 +232,9 @@ ISR(TIMER1_CAPT_vect)
 		break;
 	};
 	
-	// if an error occured, disable the interrupt
-	if( State == IDLE )
+	// if an error occured, disable the interrupt and reset state machine
+	if( dhtstate == IDLE )
 	{
-#ifdef DHT22_DEBUG
-		dCursor(4,0);				
-		dText("ERROR");
-#endif
 		idx = 0;
 		rxdata = 0;
 
