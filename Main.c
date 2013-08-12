@@ -25,7 +25,7 @@ int main(void)
 	initTimer1();
 	rc5init(rc5store, RC5_INVERTED); // Enable user control
 	initLCD();
-	dContrast(0x40); // 0x40 seems to work with the resistor hack
+	dContrast(0xBF);
 
 	dClear();
 	dCursor(0,0);
@@ -123,7 +123,7 @@ void timertest()
 	float diffus, diffms;
 
 	time1 = clock();	
-	_delay_us(80);
+	_delay_us(70);
 	time2 = clock();
 
 	difftk = difftime_tk(time2, time1);

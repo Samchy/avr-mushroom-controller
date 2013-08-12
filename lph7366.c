@@ -135,6 +135,7 @@ LCD_t LCD;
 --------------------------------------------------------------------------------------------------*/
 void initLCD ( void )
 {
+
     //  Set output bits on port B.
     DDRB |= RST_PIN | DC_PIN | CE_PIN | MOSI_PIN | CLK_PIN;
     
@@ -146,11 +147,9 @@ void initLCD ( void )
     set_LCD_RST;
 
     //  Enable SPI port: No interrupt, MSBit first, Master mode, CPOL->0, CPHA->0, Clk/4
-	//SPSR |= (1<<SPI2X);
-    SPCR = 0x53;
+	SPCR = 0;
+    SPCR = (1<<SPE) | (1<<MSTR) | (1<<SPR0) | (1<<SPR1);
 
-
-	//  Disable LCD controller
     set_LCD_CE;
 	
     dSend( 0x21, LCD_CMD );  // LCD Extended Commands.

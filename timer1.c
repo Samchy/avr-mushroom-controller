@@ -56,13 +56,8 @@ float tk2us(time_t ticks)
 --------------------------------------------------------------------------------------------------**/
 time_t ms2tk(float ms)
 {															
- 	return (time_t) \
- 	( \
-		( ms * F_CPU / 1e3 / (T1_PRESCALER)) + \
-		( (ms - (int32_t)ms) * ((float)F_CPU / 1e3 / T1_PRESCALER) ) \
-		// 	alternative for the above line	( us2tk( ((float)ms-(int32_t)ms) * 1e3) ) 
-	);															
-
+ 	return (time_t) ( ms * F_CPU / 1e3 / (T1_PRESCALER));															
+// 	alternative for the above line	( us2tk( ((float)ms-(int32_t)ms) * 1e3) ) 
 }
 
 /**--------------------------------------------------------------------------------------------------
