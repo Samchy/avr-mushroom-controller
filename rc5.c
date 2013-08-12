@@ -4,7 +4,7 @@
 void rc5softinit(uint8_t senzorpolarity);
 
 /*** Global Variables ***/
-cBufferType rc5buffer;
+fifoType rc5buffer;
 int8_t rc5cBuffer[RC5_CBUFFER_SIZE] ;
 
 volatile rc5_t rc5;
@@ -48,7 +48,7 @@ void rc5exec(uint16_t data)
 -------------------------------------------------------------------------------------------------**/
 void rc5init (rc5FunctionToExecuteType function, uint8_t senzorpolarity)
 {
-	cBufferInit(&rc5buffer, rc5cBuffer, RC5_CBUFFER_SIZE);
+	fifoInit(&rc5buffer, rc5cBuffer, RC5_CBUFFER_SIZE);
 		
 	cbi(DDRD,3); // PD3(INT1) 
   	sbi(PORTD,3); // pullup
@@ -193,7 +193,7 @@ ISR(INT1_vect)
 	if (state == error)
 	{
 		// write an error code - for debugging purposes
-		cBufferWrite(&rc5buffer, 104);	
+		fifoWrite(&rc5buffer, 104);	
 		// enable the OC1A compare interrupt. when it triggers, it means the current message stream has ended an RC5 state
 		// machine can be safely reset. otherwise, the remaining bits would mess it and you dont want that.
 		OCR1A = clock() + ms2tk( 1 + (RC5_TOTAL_BITS - rc5.context->bits) * MEAN_LONG_INTERVAL / 1000 ); 

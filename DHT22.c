@@ -6,8 +6,9 @@
 #include "timer1.h"
 #include "DHT22.h"
 #include "lph7366.h"
+#include "fifo.h"
 
-#define DHT22_DEBUG	
+// #define DHT22_DEBUG	
 #define DHT22_PIN_DEBUG
 
 volatile uint16_t t1,t2,t3;
@@ -20,7 +21,7 @@ typedef enum {
 		WAIT_DATA_START,/* 80 us */
 		WAIT_DATA, 		/* 50 us */
 		DATA,			/* 26-28 us for "0" and 70 us for "1" */
-		READY,			/* Data can be read by user */
+		READY,			/* Transfer successfully finished; user can read the data. */
 } StateMachine_Type;
 
 volatile StateMachine_Type State = IDLE;
@@ -53,7 +54,7 @@ DHT22_STATE_Type DHT22_State(void)
 
 void DHT22_Read()
 {	
-	if( State != IDLE ); //return;
+	if( State != IDLE || State != READY ); //return;
 
 	State = START;
 
@@ -67,7 +68,8 @@ void DHT22_Read()
 	cbi(DHT22_PORT, DHT22_PIN); // send start signal		
 
 	// trigger compare interrupt in 1 ms
-	OCR1B = clock() + 16000/*ms2tk(1.0)*/;
+	OCR1B = clock() + ms2tk(1.0);
+	sbi(TIFR1, OCIE1B);
 	sbi(TIMSK1, OCIE1B);
 }
 
@@ -87,12 +89,12 @@ ISR (TIMER1_COMPB_vect)
 		sbi(DHT22_PORT, DHT22_PIN);
 		// disable this interrupt
 		cbi(TIMSK1, OCIE1B);
+
 		// configure ICP interrupt
+		sbi(TIFR1, ICF1);
 		sbi(TIMSK1, ICIE1);
 		// select negative edge
 		cbi(TCCR1B, ICES1); 
-		// clear the flag of ICP interrupt
-		sbi(TIFR1, ICF1);
 
 		prevICR = clock();
 	}
@@ -112,7 +114,6 @@ ISR(TIMER1_CAPT_vect)
 	int8_t sign;
 #ifdef DHT22_DEBUG
 	uint8_t errorstr[10];	
-	uint8_t debug_t[15];
 #endif
 
 #ifdef DHT22_PIN_DEBUG
@@ -232,8 +233,13 @@ ISR(TIMER1_CAPT_vect)
 					// clear the flag of ICP interrupt
 					sbi(TIFR1, ICF1);
 #ifdef DHT22_DEBUG
-					dCursor(4,0);				
-					dText("OK");
+					dCursor(2,0);
+					sprintf(errorstr,"T: %.1f", DHT22_Info.Temperature);
+					dText(errorstr);
+					dCursor(3,0);
+					sprintf(errorstr, "H: %.1f", DHT22_Info.Humidity);				
+					dText(errorstr);
+					dRefresh();
 #endif
 #ifdef DHT22_PIN_DEBUG
 					tbi(PORTD,7);
@@ -246,6 +252,10 @@ ISR(TIMER1_CAPT_vect)
 	// if an error occured, disable the interrupt
 	if( State == IDLE )
 	{
+#ifdef DHT22_DEBUG
+		dCursor(4,0);				
+		dText("ERROR");
+#endif
 		idx = 0;
 		rxdata = 0;
 

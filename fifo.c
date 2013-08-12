@@ -1,13 +1,13 @@
-#include "cBuffer.h"
+#include "fifo.h"
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferInit
+  Name         :  fifoInit
   Description  :  Initialize given buffer at given address with given size
-  Argument(s)  :  Pointer to a cBufferType buffer, Pointer to the address this buffer is stored in memory
+  Argument(s)  :  Pointer to a fifoType buffer, Pointer to the address this buffer is stored in memory
 			   :  (user can allocate it in .data or .heap), Size of buffer
   Return value :  None.
 --------------------------------------------------------------------------------------------------**/
-void cBufferInit(cBufferType * buffer, int8_t * data, uint16_t size)
+void fifoInit(fifoType * buffer, int8_t * data, uint16_t size)
 {
 	buffer->ffilled = 0;
 	buffer->fempty = 0;
@@ -16,36 +16,36 @@ void cBufferInit(cBufferType * buffer, int8_t * data, uint16_t size)
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferIsFull
-  Description  :  Function to check if a given cBuffer is full. 
-  Argument(s)  :  Pointer to a cBufferType buffer
+  Name         :  fifoIsFull
+  Description  :  Function to check if a given fifo is full. 
+  Argument(s)  :  Pointer to a fifoType buffer
   Return value :  1 if FULL
 --------------------------------------------------------------------------------------------------**/
-uint8_t cBufferIsFull(cBufferType * buffer)
+uint8_t fifoIsFull(fifoType * buffer)
 {
 	return (buffer->fempty + 1) % buffer->size == buffer->ffilled;
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferIsEmpty.
-  Description  :  Function to check if a given cBuffer is empty. 
-  Argument(s)  :  Pointer to a cBufferType buffer.
+  Name         :  fifoIsEmpty.
+  Description  :  Function to check if a given fifo is empty. 
+  Argument(s)  :  Pointer to a fifoType buffer.
   Return value :  1 if EMPTY.
 --------------------------------------------------------------------------------------------------**/
-uint8_t cBufferIsEmpty(cBufferType * buffer)
+uint8_t fifoIsEmpty(fifoType * buffer)
 { 
 	return buffer->fempty == buffer->ffilled;
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferRead.
+  Name         :  fifoRead.
   Description  :  Function to get a char from front of given buffer.
-  Argument(s)  :  Pointer to a cBufferType buffer.
+  Argument(s)  :  Pointer to a fifoType buffer.
   Return value :  character. (returns zero if buffer empty)
 --------------------------------------------------------------------------------------------------**/
-int8_t cBufferRead(cBufferType * buffer, int8_t * elem)
+int8_t fifoRead(fifoType * buffer, int8_t * elem)
 {
-	if ( !cBufferIsEmpty(buffer) )
+	if ( !fifoIsEmpty(buffer) )
 	{
 		*elem = (int8_t) buffer->data[buffer->ffilled];
 		buffer->ffilled = (buffer->ffilled + 1) % buffer->size;
@@ -56,29 +56,29 @@ int8_t cBufferRead(cBufferType * buffer, int8_t * elem)
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferReadAtIndex.
+  Name         :  fifoReadAtIndex.
   Description  :  Function to get a char from given index of given buffer.
-  Argument(s)  :  Pointer to a cBufferType buffer, Index.
+  Argument(s)  :  Pointer to a fifoType buffer, Index.
   Return value :  character.
 --------------------------------------------------------------------------------------------------**/
-uint8_t cBufferReadAtIndex(cBufferType * buffer, uint16_t index)
+uint8_t fifoReadAtIndex(fifoType * buffer, uint16_t index)
 {
 	return buffer->data[ (buffer->ffilled + index) % (buffer->size) ];
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferWrite.
+  Name         :  fifoWrite.
   Description  :  Function to add a char to the buffer.
 			   :  \note Before calling this function, user is responsable for checking in a loop if provided buffer is not full.
 			   :  \example 
-				  while( cBufferFull(buffer) );
-				  cBufferWrite(buffer,'c');
-  Argument(s)  :  Pointer to a cBufferType buffer, character to add
+				  while( fifoFull(buffer) );
+				  fifoWrite(buffer,'c');
+  Argument(s)  :  Pointer to a fifoType buffer, character to add
   Return value :  0 - success; 1 - Buffer Full.
 --------------------------------------------------------------------------------------------------**/
-int8_t cBufferWrite(cBufferType * buffer, int8_t character)
+int8_t fifoWrite(fifoType * buffer, int8_t character)
 {
-	if ( !cBufferIsFull(buffer) )
+	if ( !fifoIsFull(buffer) )
 	{
 		buffer->data[buffer->fempty] = character;
 		buffer->fempty = (buffer->fempty + 1) % buffer->size;
@@ -91,12 +91,12 @@ int8_t cBufferWrite(cBufferType * buffer, int8_t character)
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  cBufferFlush.
+  Name         :  fifoFlush.
   Description  :  Function flush the buffer contents.
-  Argument(s)  :  Pointer to a cBufferType buffer.
+  Argument(s)  :  Pointer to a fifoType buffer.
   Return value :  None.
 --------------------------------------------------------------------------------------------------**/
-void cBufferFlush(cBufferType * buffer)
+void fifoFlush(fifoType * buffer)
 {
     /// simulate an empty buffer
 	buffer->ffilled = buffer->fempty;

@@ -2,7 +2,6 @@
   Name         :  lph7366.h
   Description  :  Header file for LPH 7366 Nokia 84x48 graphic LCD driver.
   Author       :  26.03.2012 - Darius Berghe
-				 (Built upon Louis Frigon and Sylvain Bissonnette driver)
 --------------------------------------------------------------------------------------------------*/
 #ifndef _LPH7366_H_
 	#define _LPH7366_H_

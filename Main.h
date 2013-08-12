@@ -20,7 +20,7 @@ _________________________________________________________________________
 #include "timer1.h"
 #include "rc5.h"
 // #include "USART.h"
-#include "cBuffer.h"
+#include "fifo.h"
 #include "lph7366.h"
 #include "DHT22.h"
 

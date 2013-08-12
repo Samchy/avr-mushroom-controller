@@ -2,7 +2,7 @@
 #include "backlight.h"
 #include <util/delay.h>
 
-extern cBufferType rc5buffer;
+extern fifoType rc5buffer;
 void CheckIR(void);
 void rc5store(uint16_t);
 void timertest(void);
@@ -42,18 +42,18 @@ int main(void)
 		if( DHT22_State() == DHT22_READY )
 		{
 			uint8_t string[10];
-			sprintf(string, "%.1f", DHT22_ReadTemperature());
+			sprintf(string, "T: %.1f", DHT22_ReadTemperature());
 			dCursor(2,0);
 			dText(string);
-			sprintf(string, "%.1f", DHT22_ReadHumidity());
+			sprintf(string, "H: %.1f", DHT22_ReadHumidity());
 			dCursor(3,0);
 			dText(string);
 
 			dRefresh();
 		}
-
 	}
-	return 0;
+
+	return 1;
 }
 
 /**--------------------------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ void rc5store(uint16_t data)
 		prevtogglebit = currtogglebit;	
 	}
 
-	cBufferWrite(&rc5buffer, (int8_t)command);	
+	fifoWrite(&rc5buffer, (int8_t)command);	
 }
 
 /**--------------------------------------------------------------------------------------------------
@@ -88,9 +88,9 @@ void CheckIR(void)
 {
 	uint8_t command;
 
-	if( !cBufferIsEmpty(&rc5buffer) )
+	if( !fifoIsEmpty(&rc5buffer) )
 	{
-		cBufferRead(&rc5buffer, (int8_t *)&command);
+		fifoRead(&rc5buffer, (int8_t *)&command);
 		dClear();
 		dCursor(0,0);
 		char debugstr[6];
@@ -98,19 +98,24 @@ void CheckIR(void)
 		dText(debugstr);
 
 		switch (command) {
-			case CHUP: incrBacklight(); break;
-			case CHDOWN: decrBacklight(); break;
-			case POWER: 
-						if( getBacklight() ) 
-							setBacklight(0);
-						else
-							setBacklight(7);
+			case CHUP: 
+				incrBacklight(); 
 			break;
-			case 6: tbi(PORTD,6); break;
-			case 7: tbi(PORTD,7); break;
-			case 9: DHT22_Read(); break;
-			case 8: timertest(); break;
-	 
+
+			case CHDOWN: 
+				decrBacklight(); 
+			break;
+
+			case POWER: 
+				if( getBacklight() ) 
+					setBacklight(0);
+				else
+					setBacklight(7);
+			break;
+
+			case 2: tbi(PORTD,6); break;
+			case 3: tbi(PORTD,7); break;
+			case 1: DHT22_Read(); break;	 
 		}
 
 		dRefresh();

@@ -10,7 +10,7 @@ extern "C" {
 #include <avr/pgmspace.h>
 #include "utils.h"
 #include "timer1.h"
-#include "cBuffer.h"
+#include "fifo.h"
 
 // define the size of the circular buffer that will contain the received commands
 #define RC5_CBUFFER_SIZE 5
@@ -114,7 +114,7 @@ uint8_t rc5extcomm (uint16_t );
 
 extern volatile rc5_t rc5;
 extern volatile rc5context_t rc5context;
-extern cBufferType rc5buffer;
+extern fifoType rc5buffer;
 
 #ifdef __cplusplus
 }
