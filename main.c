@@ -84,10 +84,12 @@ int main(void)
 
 		if(OneSecondFlag)
 		{
-
 			DHT22_Read();
-			uint16_t mg811val = readMG811();
-			printf("\nCO2: %u", mg811val);
+			printf("CO2Curve %f %f %f", CO2Curve[0], CO2Curve[1], CO2Curve[2]);
+			float mg811volts = MG811_ReadVolts();
+			printf("\nCO2: %.2f V", mg811volts);
+			uint32_t mg811ppm = MG811_ReadPPM( mg811volts, CO2Curve );
+			printf("\nCO2: %u ppm", mg811ppm);
 			//i+=10;
 			//dContrast(i);
 			//sprintf(string, "CO2: %u", readMG811());

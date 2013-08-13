@@ -1,4 +1,5 @@
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "timer1.h"
 #include "config.h"
 #include "utils.h"
@@ -127,12 +128,39 @@ float difftime_ms(time_t time2, time_t time1)
 }
 
 /**--------------------------------------------------------------------------------------------------
-  Name         :  basic_delay_us
+  Name         :  delay_us
   Description  :  Delays a number of microseconds
   Argument(s)  :  microseconds
   Return value :  None.
 --------------------------------------------------------------------------------------------------**/
 void delay_us(float us)
+{
+	uint32_t i;
+	for( i=(int32_t)us; i>0; i--)
+		_delay_us(1);
+}
+
+/**--------------------------------------------------------------------------------------------------
+  Name         :  delay_ms
+  Description  :  Delays a number of miliseconds
+  Argument(s)  :  miliseconds
+  Return value :  None.
+--------------------------------------------------------------------------------------------------**/
+void delay_ms(float ms)
+{
+	uint32_t i;
+	for( i=(int32_t)ms; i>0; i--)
+		_delay_ms(1);
+}
+
+
+/**--------------------------------------------------------------------------------------------------
+  Name         :  delay_us
+  Description  :  Delays a number of microseconds
+  Argument(s)  :  microseconds
+  Return value :  None.
+--------------------------------------------------------------------------------------------------**/
+void obsolete_delay_us(float us)
 { 
 	cli();  // Clear interrupts to have an accurate delay
 	
@@ -164,7 +192,7 @@ void basic_delay_ms(float ms)
   Argument(s)  :  miliseconds
   Return value :  None.
 --------------------------------------------------------------------------------------------------**/
-void delay_ms(float ms)
+void obsolete_delay_ms(float ms)
 {
 	int32_t i;
 	for( i=(int32_t)ms; i>0; i--)

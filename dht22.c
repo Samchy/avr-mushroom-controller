@@ -8,7 +8,7 @@
 #include "lph7366.h"
 #include "fifo.h"
 
-#define DHT22_PIN_DEBUG
+// #define DHT22_PIN_DEBUG
 
 volatile uint16_t t1,t2,t3;
 
