@@ -1,3 +1,6 @@
+//for debugging
+#include <stdio.h>
+
 #include <stdint.h>
 #include <avr/io.h>
 
@@ -19,8 +22,10 @@ float CO2Curve[3]  =  { 2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE/(2.602-3)) 
 
 void initMG811()
 {
+	// disable digital function
+	DIDR0 = 0xff;
 	// AVCC reference, channel 0
-	ADMUX =  0;
+	ADMUX =  (1<<REFS0) ;
 	// 128 prescaler => 125 kHz
 	ADCSRA = (1<<ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); 
 	// Free running mode
@@ -33,11 +38,15 @@ void initMG811()
 uint16_t readMG811(void)
 {
 	uint16_t retval = 0;
+	uint8_t temp;
 	ADCSRA |= (1<<ADSC); 
 	while( ADCSRA & (1<<ADSC) )
 		;
 	retval = ADCL;
-	retval |= (uint16_t)(ADCH<<8);
+	//printf("\nADCL: %u", retval);
+	temp = ADCH;
+	//printf("\nADCH: %u", temp);
+	retval |= ((uint16_t)temp<<8);
 
 	return retval;
 }

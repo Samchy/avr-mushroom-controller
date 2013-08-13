@@ -1,6 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "USART.h"
+#include "uart.h"
 #include "config.h"
 #include "utils.h"
 
@@ -28,7 +28,7 @@
 #endif
 
 /** __________________________________________________________________
-		Initialisation of USART module buffers as circular buffers
+		Initialisation of UART module buffers as circular buffers
  **/
  fifoType rxbuffer ;
  fifoType txbuffer ;
@@ -37,16 +37,16 @@
  fifoType * txbuf ;
 
  /** Receive and Transmit actual buffer arrays **/
- int8_t USART_rxBuffer[RXBUF_SIZE] ;
- int8_t USART_txBuffer[TXBUF_SIZE] ;
+ int8_t UART_rxBuffer[RXBUF_SIZE] ;
+ int8_t UART_txBuffer[TXBUF_SIZE] ;
  
 /**-------------------------------------------------------------------------------------------------
-  Name         :  initUSART
-  Description  :  initialises the USART  
+  Name         :  initUART
+  Description  :  initialises the UART  
   Argument(s)  :  None.
   Return value :  None.
 -------------------------------------------------------------------------------------------------**/
-void initUSART()
+void initUART()
 {
 	UCSRB |= (1<<RXEN) | (1<<TXEN) ; // enable reception & transmission circuitry
 	
@@ -67,23 +67,23 @@ void initUSART()
 	rxbuf = &rxbuffer;
 	txbuf = &txbuffer;
 	
-	//Alternatvely: uint8_t * USART_rxBuffer = (uint8_t *) malloc(RXBUF_SIZE * sizeof(uint8_t));
-	//			    uint8_t * USART_txBuffer = (uint8_t *) malloc(TXBUF_SIZE * sizeof(uint8_t)); 
+	//Alternatvely: uint8_t * UART_rxBuffer = (uint8_t *) malloc(RXBUF_SIZE * sizeof(uint8_t));
+	//			    uint8_t * UART_txBuffer = (uint8_t *) malloc(TXBUF_SIZE * sizeof(uint8_t)); 
 	
-	fifoInit( rxbuf, USART_txBuffer, RXBUF_SIZE);
-	fifoInit( txbuf, USART_txBuffer, TXBUF_SIZE);
+	fifoInit( rxbuf, UART_txBuffer, RXBUF_SIZE);
+	fifoInit( txbuf, UART_txBuffer, TXBUF_SIZE);
 }
 
 /**-------------------------------------------------------------------------------------------------
-  Name         :  usartSendChar
+  Name         :  uartSendChar
   Description  :  Loads character to buffer
   Argument(s)  :  character to send, stream pointer
   Return value :  0 for success
 -------------------------------------------------------------------------------------------------**/
-int16_t usartSendChar(int8_t c, FILE * stream)
+int16_t uartSendChar(int8_t c, FILE * stream)
 {
 	if (c == '\n')
-		usartSendChar('\r', stream); // manually insert CR before LF 
+		uartSendChar('\r', stream); // manually insert CR before LF 
 	if ( bis(UCSRB,UDRE) && bis(SREG,7))	
 		while( fifoIsFull( txbuf ) );
 	fifoWrite(txbuf, c);
@@ -92,12 +92,12 @@ int16_t usartSendChar(int8_t c, FILE * stream)
 }
 
 /**-------------------------------------------------------------------------------------------------
-  Name         :  usartSend
+  Name         :  uartSend
   Description  :  Sends a string from RAM.  
   Argument(s)  :  pointer to string in RAM.
   Return value :  None.
 -------------------------------------------------------------------------------------------------**/
-void usartSend( int8_t * string )
+void uartSend( int8_t * string )
 {
 	int8_t * ptr;
 	for( ptr = string; *ptr != '\0'; ptr++ )
@@ -114,13 +114,13 @@ void usartSend( int8_t * string )
 }
 
 /**-------------------------------------------------------------------------------------------------
-  Name         :  usartSendFF (FF - From Flash)
+  Name         :  uartSendFF (FF - From Flash)
   Description  :  Sends a string from .pgmspace  
   Argument(s)  :  pointer to string in .pgmspace
   Return value :  None.
-  \note		   :  Use usartSend_P macro from header file instead (or simply printf_P)
+  \note		   :  Use uartSend_P macro from header file instead (or simply printf_P)
 -------------------------------------------------------------------------------------------------**/
-void usartSendFF(const int8_t * stringFF)
+void uartSendFF(const int8_t * stringFF)
 {
 	const int8_t * ptr = stringFF;
 	for( ; pgm_read_byte(ptr) != '\0'; ptr++ )
@@ -134,12 +134,12 @@ void usartSendFF(const int8_t * stringFF)
 }
 
 /**-------------------------------------------------------------------------------------------------
-  Name         :  usartGet
+  Name         :  uartGet
   Description  :  waits for an RXC interrupt and returns received value
   Argument(s)  :  pointer to a stream
   Return value :  received character
 -------------------------------------------------------------------------------------------------**/
-int16_t usartGet(FILE * stream) 
+int16_t uartGet(FILE * stream) 
 {
 	int8_t character;
 	if( bis(UCSRB,RXCIE) && bis(SREG,7));

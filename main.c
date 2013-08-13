@@ -8,11 +8,11 @@
 #include "rc5.h"
 #include "fifo.h"
 #include "lph7366.h"
-#include "DHT22.h"
+#include "dht22.h"
 #include "backlight.h"
 #include "timer0.h"
 #include "mg811.h"
-#include "USART.h"
+#include "uart.h"
 
 #define OFF		0
 #define UART_DEBUG	1	
@@ -21,10 +21,10 @@
 
 
 extern fifoType rc5buffer;
-void CheckIR(void);
+void checkIR(void);
 void rc5store(uint16_t);
 
-static FILE usartstream = FDEV_SETUP_STREAM(usartSendChar, usartGet, _FDEV_SETUP_RW);
+static FILE uartstream = FDEV_SETUP_STREAM(uartSendChar, uartGet, _FDEV_SETUP_RW);
 
 int main(void)
 {
@@ -32,7 +32,7 @@ int main(void)
 	uint8_t i=0;
 	
 	// configure printf, scanf etc. for USART
-	stdout = stdin = &usartstream; 
+	stdout = stdin = &uartstream; 
 
 	// Relays
 	sbi(DDRD,6); sbi(PORTD,6);
@@ -57,15 +57,17 @@ int main(void)
 	dClear();
 	dCursor(0,0);
 	dText("Reset");
-	dRefresh();*/
+	dRefresh();
 #else
-	initUSART();
+	initUART();
 #endif
+
+	// Enable interrupts in SREG.I
 	sei();
 
 	while(1)
 	{
-		CheckIR();
+		checkIR();
 		
 		if( DHT22_State() == DHT22_READY )
 		{
@@ -78,15 +80,14 @@ int main(void)
 			//dRefresh();
 			printf("\nT: %.1f", DHT22_ReadTemperature());
 			printf("\nH: %.1f", DHT22_ReadHumidity());
-			
 		}
 
 		if(OneSecondFlag)
 		{
 
 			DHT22_Read();
-
-			printf("\nCO2: %u", readMG811());
+			uint16_t mg811val = readMG811();
+			printf("\nCO2: %u", mg811val);
 			//i+=10;
 			//dContrast(i);
 			//sprintf(string, "CO2: %u", readMG811());
@@ -129,7 +130,7 @@ void rc5store(uint16_t data)
   Description  :  Called in the main loop. Checks the FIFO for new commands and executes corresponding 
 				  actions.
 --------------------------------------------------------------------------------------------------**/
-void CheckIR(void)
+void checkIR(void)
 {
 	uint8_t command;
 

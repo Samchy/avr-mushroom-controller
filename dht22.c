@@ -4,11 +4,11 @@
 #include <avr/interrupt.h>
 #include "utils.h"
 #include "timer1.h"
-#include "DHT22.h"
+#include "dht22.h"
 #include "lph7366.h"
 #include "fifo.h"
 
-// #define DHT22_PIN_DEBUG
+#define DHT22_PIN_DEBUG
 
 volatile uint16_t t1,t2,t3;
 
@@ -17,7 +17,7 @@ typedef enum {
 		START,			/* > 1ms */
 		WAIT_ACK,		/* 20-40 us */
 		ACK,			/* 80 us */
-		WAIT_DATA_START,/* 80 us */
+		WAIT_DATA_START,	/* 80 us */
 		WAIT_DATA, 		/* 50 us */
 		DATA,			/* 26-28 us for "0" and 70 us for "1" */
 		READY,			/* Transfer successfully finished; user can read the data. */
@@ -213,7 +213,7 @@ ISR(TIMER1_CAPT_vect)
 					else
 						sign = 1;
 					temperature &= ~0x8000;
-					DHT22_Info.Temperature = (float) temperature / 10 * sign;
+					DHT22_Info.Temperature = (float) temperature / 10 * sign + DHT22_OFFSET;
 					DHT22_Info.Humidity = (float) humidity / 10;
 					
 					dhtstate = READY;

@@ -14,25 +14,25 @@
 #define TXBUF_SIZE 255
 
 /** Initialisation routines for USART module **/
-void initUSART(void);
+void initUART(void);
 
 /** Function to send a char via USART **/
-int16_t usartSendChar(int8_t, FILE *);
+int16_t uartSendChar(int8_t, FILE *);
 
 /** Function to send a string via USART **/
-void usartSend(int8_t *);
+void uartSend(int8_t *);
 
-/** Macro to send a string from flash via USART using usartSendFF() **/
-#define usartSend_P(_str)	usartSendFF(PSTR(_str))
-void usartSendFF(const int8_t * PROGMEM);
+/** Macro to send a string from flash via USART using uartSendFF() **/
+#define uartSend_P(_str)	uartSendFF(PSTR(_str))
+void uartSendFF(const int8_t * PROGMEM);
 
 /** Function that will contain the user desired response.
 	It is called at completion of a receival('\0' encountered)
 **/
-void usartResponse(fifoType *);
+void uartResponse(fifoType *);
 
 /** Receive a char routine **/
-int16_t usartGet(FILE *);
+int16_t uartGet(FILE *);
 
 
 #endif // header guard endif

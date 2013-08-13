@@ -9,7 +9,12 @@
 #define DHT22_PIN	0
 
 // Tolerance of measurements in microseconds
-#define DHT22_TOLERANCE	20
+#define DHT22_TOLERANCE	25
+
+// If something influences the reading (in my case the MG811 produces heat at <10cm from the DHT22)
+// empirically adjust the offset to get more accurate results. 
+#define DHT22_OFFSET (-2.0)
+
 
 typedef struct {
 	float Temperature;

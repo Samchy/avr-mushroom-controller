@@ -34,18 +34,17 @@ OPT = s
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
-# List C source files here. (C dependencies are automatically generated.)
-#SRC = $(PROJECT).c
-
-# If there is more than one source file, append them above, or modify and
-# uncomment the following:
-SRC +=  lph7366.c timer1.c timer0.c rc5.c fifo.c backlight.c Main.c DHT22.c mg811.c USART.c
-
-# You can also wrap lines by appending a backslash to the end of the line:
-#SRC += baz.c \
-#xyzzy.c
-
-
+# Source files:
+SRC += 	lph7366.c \
+	timer1.c \
+	timer0.c \
+	rc5.c \
+	fifo.c \
+	backlight.c \
+	dht22.c \
+	mg811.c \
+	uart.c \
+	main.c
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
