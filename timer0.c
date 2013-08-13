@@ -1,4 +1,7 @@
 #include "timer0.h"
+#include <stdint.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 uint8_t OneSecondFlag = 0;
 
@@ -14,7 +17,7 @@ void initTimer0()
 
 ISR (TIMER0_OVF_vect)
 {
-	static uint16_t count = 62500;
+	static uint16_t count = 62500;// - 1s
 	if(!--count)
 	{
 		OneSecondFlag = 1;

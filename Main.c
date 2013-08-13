@@ -1,17 +1,38 @@
-#include "Main.h"
+// #include <stdio.h>
+#include <stdint.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+// #include <avr/pgmspace.h>
+#include "utils.h"
+#include "timer1.h"
+#include "rc5.h"
+#include "fifo.h"
+#include "lph7366.h"
+#include "DHT22.h"
 #include "backlight.h"
-#include <util/delay.h>
 #include "timer0.h"
+#include "mg811.h"
+#include "USART.h"
+
+#define OFF		0
+#define UART_DEBUG	1	
+#define LCD_DEBUG	2
+#define DEBUG		UART_DEBUG
+
 
 extern fifoType rc5buffer;
 void CheckIR(void);
 void rc5store(uint16_t);
 
-//  static FILE usartstream = FDEV_SETUP_STREAM(usartSendChar, usartGet,_FDEV_SETUP_RW);
+static FILE usartstream = FDEV_SETUP_STREAM(usartSendChar, usartGet, _FDEV_SETUP_RW);
 
 int main(void)
 {
-//  stdout = stdin = &usartstream; // configure streams
+	uint8_t string[10];
+	uint8_t i=0;
+	
+	// configure printf, scanf etc. for USART
+	stdout = stdin = &usartstream; 
 
 	// Relays
 	sbi(DDRD,6); sbi(PORTD,6);
@@ -21,19 +42,26 @@ int main(void)
 	cbi(DHT22_DIR, DHT22_PIN);
 	sbi(DHT22_PORT, DHT22_PIN);
 
+	initMG811();
+
 	initTimer0();
 	initTimer1();
 	rc5init(rc5store, RC5_INVERTED); // Enable user control
-	initLCD();
-	dContrast(0xBF);
 
+	// LCD related
+#if (DEBUG != UART_DEBUG)
+	initBacklight();
+	initLCD();
+	dContrast(0x35);
+	
 	dClear();
 	dCursor(0,0);
 	dText("Reset");
-	dRefresh();
-
+	dRefresh();*/
+#else
+	initUSART();
+#endif
 	sei();
-	initBacklight();
 
 	while(1)
 	{
@@ -41,20 +69,31 @@ int main(void)
 		
 		if( DHT22_State() == DHT22_READY )
 		{
-			uint8_t string[10];
-			sprintf(string, "T: %.1f", DHT22_ReadTemperature());
-			dCursor(2,0);
-			dText(string);
-			sprintf(string, "H: %.1f", DHT22_ReadHumidity());
-			dCursor(3,0);
-			dText(string);
-
-			dRefresh();
+			//sprintf(string, "T: %.1f", DHT22_ReadTemperature());
+			//dCursor(2,0);
+			//dText(string);
+			//sprintf(string, "H: %.1f", DHT22_ReadHumidity());
+			//dCursor(3,0);
+			//dText(string);
+			//dRefresh();
+			printf("\nT: %.1f", DHT22_ReadTemperature());
+			printf("\nH: %.1f", DHT22_ReadHumidity());
+			
 		}
 
 		if(OneSecondFlag)
 		{
+
 			DHT22_Read();
+
+			printf("\nCO2: %u", readMG811());
+			//i+=10;
+			//dContrast(i);
+			//sprintf(string, "CO2: %u", readMG811());
+			//dCursor(1,0);
+			//dText(string);
+			//dRefresh();
+
 			OneSecondFlag = 0;
 		}
 	}
@@ -97,12 +136,13 @@ void CheckIR(void)
 	if( !fifoIsEmpty(&rc5buffer) )
 	{
 		fifoRead(&rc5buffer, (int8_t *)&command);
-		dClear();
+#if (DEBUG == LCD_DEBUG)
 		dCursor(0,0);
 		char debugstr[6];
 		sprintf(debugstr, "C:%d", command);
 		dText(debugstr);
-
+		dRefresh();
+#endif
 		switch (command) {
 			case CHUP: 
 				incrBacklight(); 
@@ -124,7 +164,7 @@ void CheckIR(void)
 			case 1: DHT22_Read(); break;	 
 		}
 
-		dRefresh();
+		
 	}
 }
 

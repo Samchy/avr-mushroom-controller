@@ -7,21 +7,4 @@ Date:		July 2013
 _________________________________________________________________________
 */
  
-#ifndef F_CPU
-	#define F_CPU 16000000UL
-#endif
-
-// #include <stdio.h>
-#include <stdint.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-// #include <avr/pgmspace.h>
-#include "utils.h"
-#include "timer1.h"
-#include "rc5.h"
-// #include "USART.h"
-#include "fifo.h"
-#include "lph7366.h"
-#include "DHT22.h"
-
 

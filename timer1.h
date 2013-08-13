@@ -24,8 +24,6 @@ _________________________________________________________________________
 	#define _TIMER1_H
 	
 #include <stdint.h>
-#include "Main.h"
-#include "utils.h"
 
 /* Edit the prescaler to obtain the desired precision in measuring (lower = better) */
 #define T1_PRESCALER 	8

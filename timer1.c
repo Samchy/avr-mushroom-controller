@@ -1,4 +1,7 @@
+#include <avr/interrupt.h>
 #include "timer1.h"
+#include "config.h"
+#include "utils.h"
 
 /**--------------------------------------------------------------------------------------------------
   Name         :  initTimer1

@@ -3,7 +3,9 @@
   Description  :  This is a driver for the LPH - 7366 Nokia 84x48 graphic LCD.
   Author       :  2012-03-26 - Darius Berghe
 --------------------------------------------------------------------------------------------------*/
+#include <stdint.h>
 #include "lph7366.h"
+
 
 /*--------------------------------------------------------------------------------------------------
                                 Private function prototypes

@@ -6,8 +6,7 @@
 #ifndef _LPH7366_H_
 	#define _LPH7366_H_
 
-#include "Main.h"
-// #include <avr/pgmspace.h>
+#include <avr/pgmspace.h>
 
 /*--------------------------------------------------------------------------------------------------
                                   Library submodules

@@ -4,10 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <avr/pgmspace.h>
-
-
-#include "Main.h"
-#include "cBuffer.h"
+#include "fifo.h"
 
 #define BAUD_RATE 38400UL
 #define UBBRVAL (( F_CPU / BAUD_RATE / 16 ) - 1)
@@ -32,7 +29,7 @@ void usartSendFF(const int8_t * PROGMEM);
 /** Function that will contain the user desired response.
 	It is called at completion of a receival('\0' encountered)
 **/
-void usartResponse(cBufferType *);
+void usartResponse(fifoType *);
 
 /** Receive a char routine **/
 int16_t usartGet(FILE *);
